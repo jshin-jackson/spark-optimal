@@ -57,8 +57,8 @@ hadoop key list | grep ozone_encryption_key
 # Volume (Ranger Ozone policy required)
 ozone sh volume create dev   # skip if exists
 
-# Encrypted bucket — MUST use --bucketkey at creation
-ozone sh bucket create --volume dev --bucket data --bucketkey ozone_encryption_key
+# Encrypted bucket — MUST use -k/--bucketkey at creation (CDP 7.3: volume/bucket URI)
+ozone sh bucket create -k ozone_encryption_key dev/data
 ```
 
 > **Important:** Encryption is **bucket-level**. An existing unencrypted `data` bucket must be **recreated** with `--bucketkey` (after backup/migration). You cannot attach a key to an already-created plain bucket.
@@ -85,7 +85,7 @@ bash scripts/security/security_check.sh
 # includes KMS key + encrypted bucket checks
 
 hadoop key list
-ozone sh bucket info --volume dev --bucket data
+ozone sh bucket info dev/data
 ```
 
 ---

@@ -211,7 +211,7 @@ _check_hdfs_encryption_zone "${HDFS_RAW}" "${HDFS_KEY}" || fail=1
 echo
 echo "=== Ozone encrypted bucket ==="
 if command -v ozone >/dev/null 2>&1; then
-  if ozone sh bucket info --volume "${OZONE_VOL}" --bucket "${OZONE_BKT}" >/dev/null 2>&1; then
+  if ozone sh bucket info "${OZONE_VOL}/${OZONE_BKT}" >/dev/null 2>&1; then
     echo "OK  Ozone bucket exists: ${OZONE_VOL}/${OZONE_BKT}"
     echo "    Medallion data must use bucket created with --bucketkey ${OZONE_KEY}"
   else

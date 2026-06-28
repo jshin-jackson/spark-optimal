@@ -59,7 +59,7 @@ See [HDFS Encryption](../operations/hdfs-encryption.md).
 ## Ozone encryption (required)
 
 All Ozone Medallion data uses **TDE** with Ranger KMS key **`ozone_encryption_key`**.  
-Create bucket: `ozone sh bucket create --volume {env} --bucket data --bucketkey ozone_encryption_key`  
+Create bucket: `ozone sh bucket create -k ozone_encryption_key {env}/data`  
 See [Ozone Encryption](../operations/ozone-encryption.md).
 
 ## Run (Gateway Node)

@@ -98,7 +98,7 @@ hdfs crypto -createZone -keyName hdfs_encryption_key -path /dev/raw/financial/tr
 Ozone bucket must be created with encryption at creation time:
 
 ```bash
-ozone sh bucket create --volume dev --bucket data --bucketkey ozone_encryption_key
+ozone sh bucket create -k ozone_encryption_key dev/data
 ```
 
 See [HDFS Encryption](hdfs-encryption.md), [Ozone Encryption](ozone-encryption.md), `hdfs_encryption.yaml`, and `ozone_encryption.yaml`.

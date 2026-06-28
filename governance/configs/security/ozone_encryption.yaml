@@ -35,5 +35,4 @@ setup:
   script: scripts/infrastructure/setup_ozone_encrypted_bucket.sh
   doc: docs/operations/ozone-encryption.md
   bucket_create_example: >-
-    ozone sh bucket create --volume {volume} --bucket {bucket}
-    --bucketkey ozone_encryption_key
+    ozone sh bucket create -k ozone_encryption_key {volume}/{bucket}

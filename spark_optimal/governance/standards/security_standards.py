@@ -25,7 +25,7 @@ RANGER_AUTHORIZATION_CHECKLIST = [
 
 OZONE_ENCRYPTION_CHECKLIST = [
     "All Medallion Ozone data uses Ranger KMS key ozone_encryption_key (TDE)",
-    "Create bucket with: ozone sh bucket create --volume {env} --bucket data --bucketkey ozone_encryption_key",
+    "Create bucket with: ozone sh bucket create -k ozone_encryption_key {env}/data",
     "Ranger KMS: OM service user needs Get Metadata + Generate EEK on ozone_encryption_key",
     "Ranger KMS: systest needs Generate EEK + Decrypt EEK on ozone_encryption_key",
     "KMS_PROVIDER_URI set in env.conf (from hdfs getconf -confKey hadoop.security.key.provider.path)",

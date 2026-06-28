@@ -55,19 +55,19 @@ fi
 
 echo
 echo "=== Ozone encrypted bucket ==="
-if ozone sh bucket info --volume "${VOLUME}" --bucket "${BUCKET}" >/dev/null 2>&1; then
+if ozone sh bucket info "${VOLUME}/${BUCKET}" >/dev/null 2>&1; then
   echo "OK  bucket exists: ${VOLUME}/${BUCKET}"
-  if ozone sh bucket info --volume "${VOLUME}" --bucket "${BUCKET}" 2>&1 | grep -qi "encryption"; then
+  if ozone sh bucket info "${VOLUME}/${BUCKET}" 2>&1 | grep -qi "encryption"; then
     echo "    (bucket info mentions encryption — verify key is ${KEY})"
   else
     echo "WARN: bucket exists but encryption status unclear." >&2
     echo "      If bucket was created WITHOUT --bucketkey, recreate it with:" >&2
-    echo "      ozone sh bucket delete --volume ${VOLUME} --bucket ${BUCKET}" >&2
-    echo "      ozone sh bucket create --volume ${VOLUME} --bucket ${BUCKET} --bucketkey ${KEY}" >&2
+    echo "      ozone sh bucket delete ${VOLUME}/${BUCKET}" >&2
+    echo "      ozone sh bucket create -k ${KEY} ${VOLUME}/${BUCKET}" >&2
   fi
 else
   echo "Creating encrypted bucket: ${VOLUME}/${BUCKET} with key ${KEY}"
-  ozone sh bucket create --volume "${VOLUME}" --bucket "${BUCKET}" --bucketkey "${KEY}"
+  ozone sh bucket create -k "${KEY}" "${VOLUME}/${BUCKET}"
   echo "OK  encrypted bucket created"
 fi
 
