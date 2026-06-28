@@ -33,6 +33,12 @@ graph LR
 All HDFS, Ozone, and Hive/Iceberg access must be granted via **Apache Ranger** for `systest@...`.  
 Do not use filesystem ACLs. See [Ranger Authorization](../operations/ranger-authorization.md) and `governance/configs/security/ranger.yaml`.
 
+## Ozone encryption (required)
+
+All Ozone Medallion data uses **TDE** with Ranger KMS key **`ozone_encryption_key`**.  
+Create bucket: `ozone sh bucket create --volume {env} --bucket data --bucketkey ozone_encryption_key`  
+See [Ozone Encryption](../operations/ozone-encryption.md).
+
 ## Run (Gateway Node)
 
 ### Option A: Airflow (recommended)

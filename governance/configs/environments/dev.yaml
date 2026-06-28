@@ -19,6 +19,15 @@ authorization:
   doc: docs/operations/ranger-authorization.md
   forbidden: [chmod, chown, setfacl, hdfs_dfs_chmod, ozone_native_acl]
 
+ozone_encryption:
+  enabled: true
+  kms_service: cm_kms
+  encryption_key: ozone_encryption_key
+  volume: dev
+  bucket: data
+  config: governance/configs/security/ozone_encryption.yaml
+  setup_script: scripts/infrastructure/setup_ozone_encrypted_bucket.sh
+
 # Jenkins / CloudCat rebuild spec (internal DEV provisioning)
 infrastructure:
   jenkins_build: governance/configs/infrastructure/dev_jenkins_build.yaml

@@ -90,8 +90,18 @@ def build_ozone_spark_config() -> Dict[str, str]:
     env_cfg = load_environment_config()
     service_id = _env_or_config("ozone_om_service_id", "OZONE_OM_SERVICE_ID", env_cfg)
     om_address = _env_or_config("ozone_om_address", "OZONE_OM_ADDRESS", env_cfg)
-    return {
+    config = {
         "spark.hadoop.fs.ofs.impl": "org.apache.hadoop.fs.ozone.RootedOzoneFileSystem",
         "spark.hadoop.ozone.om.service.ids": service_id,
         f"spark.hadoop.ozone.om.address.{service_id}": om_address,
     }
+    config.update(build_kms_spark_config())
+    return config
+
+
+def build_kms_spark_config() -> Dict[str, str]:
+    """Ranger KMS URI for Ozone TDE — required for encrypted bucket read/write on executors."""
+    kms_uri = os.environ.get("KMS_PROVIDER_URI", "").strip()
+    if not kms_uri:
+        return {}
+    return {"spark.hadoop.hadoop.security.key.provider.path": kms_uri}

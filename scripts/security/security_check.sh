@@ -15,6 +15,10 @@ fi
 
 RANGER_DOC="governance/configs/security/ranger.yaml"
 RANGER_MD="docs/operations/ranger-authorization.md"
+OZONE_ENC_DOC="docs/operations/ozone-encryption.md"
+ENC_KEY="${OZONE_ENCRYPTION_KEY:-ozone_encryption_key}"
+OZONE_VOL="${OZONE_VOLUME:-${SBI_ENV:-dev}}"
+OZONE_BKT="${OZONE_BUCKET:-data}"
 
 echo "=== Kerberos ticket (authentication) ==="
 if klist -s; then
@@ -38,6 +42,9 @@ echo "HMS_HOSTS=${HMS_HOSTS:-unset}"
 echo "HMS_URIS=${HMS_URIS:-unset}"
 echo "FIN_DB=${FIN_DB:-unset}"
 echo "SPARK_CONF_DIR=${SPARK_CONF_DIR:-unset}"
+echo "OZONE_ENCRYPTION_KEY=${ENC_KEY}"
+echo "KMS_PROVIDER_URI=${KMS_PROVIDER_URI:-unset}"
+echo "OZONE_VOLUME=${OZONE_VOL} OZONE_BUCKET=${OZONE_BKT}"
 
 _ranger_fail() {
   local service="$1"
@@ -92,9 +99,41 @@ fail=0
 _check_ranger_path "HDFS raw (Ranger)" "${HDFS_FINANCIAL_RAW:-}" || fail=1
 _check_ranger_path "Ozone Bronze prefix (Ranger)" "${OZONE_MEDALLION_BRNZ:-}" || fail=1
 
+echo
+echo "=== Ozone TDE (Ranger KMS — ${ENC_KEY}) ==="
+if [[ -z "${KMS_PROVIDER_URI:-}" ]]; then
+  echo "WARN KMS_PROVIDER_URI unset — set in env.conf or ensure CM core-site has hadoop.security.key.provider.path" >&2
+  fail=1
+else
+  echo "OK  KMS_PROVIDER_URI=${KMS_PROVIDER_URI}"
+fi
+
+if command -v hadoop >/dev/null 2>&1; then
+  if hadoop key list 2>/dev/null | grep -q "${ENC_KEY}"; then
+    echo "OK  Ranger KMS key listed: ${ENC_KEY}"
+  else
+    echo "ERROR: encryption key '${ENC_KEY}' not found (hadoop key list)" >&2
+    echo "       Create in Ranger KMS (cm_kms). See ${OZONE_ENC_DOC}" >&2
+    fail=1
+  fi
+else
+  echo "SKIP hadoop key list: hadoop CLI not found"
+fi
+
+if command -v ozone >/dev/null 2>&1; then
+  if ozone sh bucket info --volume "${OZONE_VOL}" --bucket "${OZONE_BKT}" >/dev/null 2>&1; then
+    echo "OK  Ozone bucket exists: ${OZONE_VOL}/${OZONE_BKT}"
+    echo "    Medallion data must use bucket created with --bucketkey ${ENC_KEY}"
+  else
+    echo "WARN Ozone bucket ${OZONE_VOL}/${OZONE_BKT} not found — run scripts/infrastructure/setup_ozone_encrypted_bucket.sh"
+  fi
+else
+  echo "SKIP ozone bucket info: ozone CLI not found"
+fi
+
 if [[ "${fail}" -ne 0 ]]; then
   exit 1
 fi
 
 echo
-echo "Security check completed (Kerberos OK, Ranger path probes OK or warn-only)."
+echo "Security check completed (Kerberos OK, Ranger + Ozone encryption checks OK or warn-only)."

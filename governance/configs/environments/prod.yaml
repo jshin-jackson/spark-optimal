@@ -18,6 +18,15 @@ authorization:
   doc: docs/operations/ranger-authorization.md
   forbidden: [chmod, chown, setfacl, hdfs_dfs_chmod, ozone_native_acl]
 
+ozone_encryption:
+  enabled: true
+  kms_service: cm_kms
+  encryption_key: ozone_encryption_key
+  volume: prod
+  bucket: data
+  config: governance/configs/security/ozone_encryption.yaml
+  setup_script: scripts/infrastructure/setup_ozone_encrypted_bucket.sh
+
 cluster:
   total_vcores: 26496
   total_memory_gb: 123566

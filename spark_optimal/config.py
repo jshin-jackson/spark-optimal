@@ -71,6 +71,10 @@ def load_resource_limits(env: str | None = None) -> dict[str, Any]:
     return env_cfg.get("resource_limits", {})
 
 
+def load_ozone_encryption_config() -> dict[str, Any]:
+    return load_yaml("governance/configs/security/ozone_encryption.yaml")
+
+
 def load_resource_profiles(env: str | None = None) -> dict[str, Any]:
     base = load_yaml("governance/configs/workloads/resource_profiles.yaml")
     profiles = base.get("resource_profiles", {})

@@ -72,6 +72,23 @@ Volume/bucket **creation** (`ozone sh volume create`, `bucket create`) succeeds 
 
 Where the Spark Ranger plugin is enabled, align policies with Hive/HDFS/Ozone resources used by Spark SQL and Iceberg jobs. Spark does **not** bypass Ranger.
 
+### Ranger KMS (Ozone TDE)
+
+All Medallion **Ozone** data is encrypted at rest with Ranger KMS key **`ozone_encryption_key`** (service `cm_kms`).
+
+| Principal | Permissions on `ozone_encryption_key` |
+|-----------|--------------------------------------|
+| Ozone Manager service user | Get Metadata, Generate EEK |
+| `systest` (Gateway / Spark) | Generate EEK, Decrypt EEK |
+
+Bucket must be created with encryption at creation time:
+
+```bash
+ozone sh bucket create --volume dev --bucket data --bucketkey ozone_encryption_key
+```
+
+See [Ozone Encryption](ozone-encryption.md) and `governance/configs/security/ozone_encryption.yaml`.
+
 ---
 
 ## Pre-flight check (Gateway)

@@ -1,0 +1,39 @@
+# Ozone Transparent Data Encryption (TDE) — Ranger KMS
+#
+# All spark-optimal Medallion data on Ozone MUST use this encryption key.
+# Bucket encryption is set at bucket creation time (--bucketkey); it cannot be
+# enabled on an existing unencrypted bucket without recreating the bucket.
+
+enabled: true
+kms_service: cm_kms
+encryption_key: ozone_encryption_key
+cipher: AES/CTR/NoPadding
+key_length_bits: 256
+
+# Medallion layout: ofs://{service_id}/{volume}/{bucket}/brnz|slvr|gld/...
+bucket_name: data
+volume_by_environment:
+  dev: dev
+  uat: uat
+  prod: prod
+
+# Spark/Hadoop — propagate CM KMS URI to executors (see env.conf KMS_PROVIDER_URI)
+hadoop_property: hadoop.security.key.provider.path
+
+# Ranger KMS key ACLs (Ranger UI → KMS → cm_kms → ozone_encryption_key)
+ranger_kms:
+  key_name: ozone_encryption_key
+  om_service_user_permissions:
+    - Get Metadata
+    - Generate EEK
+  gateway_principal_permissions:
+    - Generate EEK
+    - Decrypt EEK
+  note: "OM user from CM (e.g. om/_HOST@REALM). Gateway principal = systest@..."
+
+setup:
+  script: scripts/infrastructure/setup_ozone_encrypted_bucket.sh
+  doc: docs/operations/ozone-encryption.md
+  bucket_create_example: >-
+    ozone sh bucket create --volume {volume} --bucket {bucket}
+    --bucketkey ozone_encryption_key

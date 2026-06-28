@@ -22,6 +22,18 @@ services:
   spark:
     plugin: ranger-spark-plugin
     description: Spark SQL / job access where Spark Ranger plugin is enabled (align with Hive/HDFS)
+  ranger_kms:
+    plugin: ranger-kms
+    service: cm_kms
+    description: Ozone TDE encryption key ozone_encryption_key — all Medallion Ozone data
+
+# Ozone TDE — all Medallion buckets use Ranger KMS key ozone_encryption_key (see ozone_encryption.yaml)
+ozone_encryption:
+  kms_service: cm_kms
+  encryption_key: ozone_encryption_key
+  bucket_key_flag: "--bucketkey ozone_encryption_key"
+  config: governance/configs/security/ozone_encryption.yaml
+  doc: docs/operations/ozone-encryption.md
 
 forbidden:
   - hdfs dfs -chmod
@@ -61,6 +73,11 @@ environments:
         - slvr_transactions
         - gld_daily_report
       actions: [select, update, create, drop, alter, index, lock, all]
+    ranger_kms:
+      service: cm_kms
+      key: ozone_encryption_key
+      om_service_user: [Get Metadata, Generate EEK]
+      gateway_principal: [Generate EEK, Decrypt EEK]
 
   uat:
     hdfs:
@@ -100,5 +117,7 @@ policy_request_template:
     - "Ranger HDFS policy for raw path and Spark history dir"
     - "Ranger Ozone policy for volume/bucket and brnz/slvr/gld prefixes"
     - "Ranger Hive policy for sbi_financial database and Iceberg tables"
+    - "Ranger KMS policy for ozone_encryption_key (OM + systest) — Ozone TDE"
+    - "Ozone bucket created with --bucketkey ozone_encryption_key"
     - "Confirm Spark Ranger plugin policies if enabled on cluster"
   verify: "bash scripts/security/security_check.sh"
