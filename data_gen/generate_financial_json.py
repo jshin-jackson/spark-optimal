@@ -42,6 +42,8 @@ logger = logging.getLogger(__name__)
 
 # 1 GB = 1024^3 bytes (바이너리 기준)
 BYTES_PER_GB = 1024**3
+TABLE_NAME = "financial_transactions"
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,24 +75,52 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _fit_synthesizer(seed_df: pd.DataFrame):
+def _build_metadata(seed_df: pd.DataFrame):
+    """
+    SDV Metadata 생성 (1.37+ API).
+
+    detect → 컬럼 sdtype 보정 → validate. save_to_json은 fit 전에 호출.
+    """
+    from sdv.metadata import Metadata
+
+    metadata = Metadata.detect_from_dataframe(data=seed_df, table_name=TABLE_NAME)
+
+    metadata.update_column(
+        column_name="transaction_id",
+        sdtype="id",
+        table_name=TABLE_NAME,
+    )
+    metadata.update_column(
+        column_name="transaction_ts",
+        sdtype="datetime",
+        datetime_format=DATETIME_FORMAT,
+        table_name=TABLE_NAME,
+    )
+    metadata.update_column(
+        column_name="amount",
+        sdtype="numerical",
+        table_name=TABLE_NAME,
+    )
+    metadata.update_column(
+        column_name="balance_after",
+        sdtype="numerical",
+        table_name=TABLE_NAME,
+    )
+    metadata.validate()
+    return metadata
+
+
+def _fit_synthesizer(seed_df: pd.DataFrame, metadata_path: Path):
     """
     SDV GaussianCopulaSynthesizer 학습.
 
     seed_df의 컬럼별 분포(금액, 날짜, 카테고리 등)를 학습한 뒤
     synthesizer.sample()으로 무한히 유사 데이터 생성 가능.
     """
-    from sdv.metadata import SingleTableMetadata
     from sdv.single_table import GaussianCopulaSynthesizer
 
-    metadata = SingleTableMetadata()
-    metadata.detect_from_dataframe(seed_df)
-
-    # 컬럼 타입 명시 — SDV가 더 정확한 분포를 학습하도록 도움
-    metadata.update_column("transaction_id", sdtype="id")
-    metadata.update_column("transaction_ts", sdtype="datetime")
-    metadata.update_column("amount", sdtype="numerical")
-    metadata.update_column("balance_after", sdtype="numerical")
+    metadata = _build_metadata(seed_df)
+    metadata.save_to_json(str(metadata_path))
 
     synthesizer = GaussianCopulaSynthesizer(metadata)
     synthesizer.fit(seed_df)
@@ -123,7 +153,8 @@ def generate_jsonl(output_dir: Path, target_gb: float, seed_rows: int, batch_row
 
     # Step 1: seed 데이터로 SDV 학습
     seed_df = build_seed_dataframe(seed_rows)
-    synthesizer = _fit_synthesizer(seed_df)
+    metadata_path = output_dir / "sdv_metadata.json"
+    synthesizer = _fit_synthesizer(seed_df, metadata_path)
 
     target_bytes = int(target_gb * BYTES_PER_GB)
     total_bytes = 0
@@ -162,6 +193,7 @@ def generate_jsonl(output_dir: Path, target_gb: float, seed_rows: int, batch_row
         "total_rows": total_rows,
         "files": file_index,
         "output_dir": str(output_dir),
+        "sdv_metadata": str(metadata_path),
     }
     manifest_path = output_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
