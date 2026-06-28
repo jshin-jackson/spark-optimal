@@ -9,6 +9,22 @@
 principal: systest@${KRB_REALM}
 principal_note: "Set KRB_REALM in config/env.conf; default QE-INFRA-AD.CLOUDERA.COM"
 
+# Ranger / Ranger KMS hosts (DEV HA) — governance/configs/infrastructure/ranger_hosts.yaml
+ranger_hosts:
+  config: governance/configs/infrastructure/ranger_hosts.yaml
+  ranger_admin:
+    hosts:
+      - ccycloud-1.jshin-sbi.root.comops.site
+      - ccycloud-10.jshin-sbi.root.comops.site
+    port: 6182
+    url: https://ccycloud-1.jshin-sbi.root.comops.site:6182
+  ranger_kms:
+    hosts:
+      - ccycloud-1.jshin-sbi.root.comops.site
+      - ccycloud-10.jshin-sbi.root.comops.site
+    port: 9494
+    kms_provider_uri: kms://https@ccycloud-1.jshin-sbi.root.comops.site:9494/kms
+
 services:
   hdfs:
     ranger_service: cm_hdfs

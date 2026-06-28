@@ -819,6 +819,10 @@ spark.security.credentials.hive.enabled=true
 | Ozone Service ID | `ozone1782570080` → `ofs://ozone1782570080` |
 | Ozone OM | `ccycloud-2.jshin-sbi.root.comops.site:9862`, `ccycloud-8.jshin-sbi.root.comops.site:9862` |
 | Hive Metastore | `ccycloud-1.jshin-sbi.root.comops.site:9083`, `ccycloud-6.jshin-sbi.root.comops.site:9083` |
+| **Ranger Admin** (HA) | `ccycloud-1.jshin-sbi.root.comops.site:6182`, `ccycloud-10.jshin-sbi.root.comops.site:6182` |
+| **Ranger KMS** (HA) | `ccycloud-1.jshin-sbi.root.comops.site:9494`, `ccycloud-10.jshin-sbi.root.comops.site:9494` |
+| Ranger Admin UI | https://ccycloud-1.jshin-sbi.root.comops.site:6182 (CM Quick Links 권장) |
+| KMS provider URI (fallback) | `kms://https@ccycloud-1.jshin-sbi.root.comops.site:9494/kms` |
 | Kerberos Principal | `systest@QE-INFRA-AD.CLOUDERA.COM` |
 | Keytab | `/opt/cloudera/systest.keytab` |
 
@@ -886,7 +890,7 @@ bash scripts/security/security_check.sh
 
 | 확인 | 조치 |
 |------|------|
-| `KMS_PROVIDER_URI` unset | `HADOOP_CONF_DIR` 설정 후 `hdfs getconf` → env.conf |
+| `KMS_PROVIDER_URI` unset | `export HADOOP_CONF_DIR=/etc/hadoop/conf` 후 `hdfs getconf` → env.conf. fallback: `kms://https@ccycloud-1.jshin-sbi.root.comops.site:9494/kms` |
 | `hadoop key list`에 키 없음 | Ranger KMS UI (`cm_kms`)에서 **`hdfs_encryption_key`** / **`ozone_encryption_key`** 생성 |
 | HDFS EZ 없음 / wrong key | `hdfs crypto -getZone ...` → **`hdfs_encryption_key`** 로 setup_hdfs_encryption_zone.sh |
 | bucket이 `--bucketkey` 없이 생성됨 | bucket 재생성: `--bucketkey ozone_encryption_key` |

@@ -1,0 +1,45 @@
+# Apache Ranger + Ranger KMS — DEV cluster hostnames (HA)
+#
+# Source: Cloudera Manager → Ranger / Ranger KMS service roles (jshin-sbi DEV)
+# Inventory for spark-optimal Gateway ops — policy UI, KMS key management, KMS_PROVIDER_URI
+
+environment: dev
+cluster: jshin-sbi
+
+ranger:
+  service: RANGER
+  roles:
+    admin:
+      - ccycloud-1.jshin-sbi.root.comops.site
+      - ccycloud-10.jshin-sbi.root.comops.site
+    tagsync:
+      - ccycloud-1.jshin-sbi.root.comops.site
+      - ccycloud-10.jshin-sbi.root.comops.site
+    usersync:
+      - ccycloud-1.jshin-sbi.root.comops.site
+      - ccycloud-10.jshin-sbi.root.comops.site
+  admin_ui:
+    port: 6182
+    scheme: https
+    primary_host: ccycloud-1.jshin-sbi.root.comops.site
+    url: https://ccycloud-1.jshin-sbi.root.comops.site:6182
+    note: "Also available via CM → Clusters → Ranger → Ranger Admin Web UI"
+
+ranger_kms:
+  service: RANGER_KMS
+  roles:
+    kms_server:
+      - ccycloud-1.jshin-sbi.root.comops.site
+      - ccycloud-10.jshin-sbi.root.comops.site
+  port: 9494
+  scheme: https
+  primary_host: ccycloud-1.jshin-sbi.root.comops.site
+  kms_provider_uri: kms://https@ccycloud-1.jshin-sbi.root.comops.site:9494/kms
+  ranger_kms_service_name: cm_kms
+  note: >-
+    Prefer CM core-site hadoop.security.key.provider.path (hdfs getconf).
+    Use primary_host URI as manual fallback when env.conf KMS_PROVIDER_URI is empty.
+
+encryption_keys:
+  hdfs: hdfs_encryption_key
+  ozone: ozone_encryption_key

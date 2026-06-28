@@ -41,6 +41,7 @@ hdfs_encryption:
 # Jenkins / CloudCat rebuild spec (internal DEV provisioning)
 infrastructure:
   jenkins_build: governance/configs/infrastructure/dev_jenkins_build.yaml
+  ranger_hosts: governance/configs/infrastructure/ranger_hosts.yaml
   rebuild_doc: docs/infrastructure/dev-jenkins-rebuild.md
 
 # DEV YARN cluster capacity (Gateway DEV environment)
