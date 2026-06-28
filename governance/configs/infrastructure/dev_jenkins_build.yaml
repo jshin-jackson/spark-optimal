@@ -1,0 +1,48 @@
+# =============================================================================
+# DEV Cloudera cluster — Jenkins / CloudCat build parameters
+# =============================================================================
+# Purpose: Re-provision the internal DEV environment with identical settings.
+# Usage:   docs/infrastructure/dev-jenkins-rebuild.md
+#          bash scripts/infrastructure/print_dev_jenkins_params.sh
+# =============================================================================
+
+environment: dev
+platform: cloudera_internal
+description: "SBI spark-optimal DEV — Jenkins CloudCat build (jshin-sbi)"
+
+jenkins:
+  # CloudCat cluster shortname pattern (hosts 1–10)
+  cluster_shortname: "ccycloud-{1..10}.jshin-sbi"
+  cluster_hosts:
+    - ccycloud-1.jshin-sbi
+    - ccycloud-2.jshin-sbi
+    - ccycloud-3.jshin-sbi
+    - ccycloud-4.jshin-sbi
+    - ccycloud-5.jshin-sbi
+    - ccycloud-6.jshin-sbi
+    - ccycloud-7.jshin-sbi
+    - ccycloud-8.jshin-sbi
+    - ccycloud-9.jshin-sbi
+    - ccycloud-10.jshin-sbi
+
+  # GBN versions (update only when intentionally upgrading the DEV stack)
+  cm_version: "gbn://74798696"
+  cdh_version: "gbn://74774806"
+
+  cloudcat_os: redhat96
+  cloudcat_budget: "--ycloud-queue=professional-services"
+  database: postgresql
+  kerberos: "AD KERBEROS"
+  java_version: "17.0.11-openjdk"
+
+  # Single-line OPTIONAL_ARGS as passed to Jenkins / CloudCat
+  optional_args: >-
+    --install-python-version=3.11
+    --include-service-types=ZOOKEEPER,HDFS,HBASE,HIVE,YARN,SPARK3_ON_YARN,IMPALA,OOZIE,HUE,LIVY,SOLR,RANGER,RANGER_KMS,KAFKA,KUDU,ATLAS,KNOX,TEZ,HIVE_ON_TEZ,SCHEMAREGISTRY,STREAMS_MESSAGING_MANAGER,STREAMS_REPLICATION_MANAGER,OZONE
+    --ha-service-types=ALL
+
+# Cross-reference: Spark/YARN capacity after cluster is up
+spark_optimal:
+  sbi_env: dev
+  environment_config: governance/configs/environments/dev.yaml
+  spark_defaults: conf/dev/spark-defaults.conf

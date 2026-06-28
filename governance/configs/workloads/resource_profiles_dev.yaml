@@ -1,0 +1,65 @@
+# DEV workload profiles — tuned for 32 vCore / 256GB / 9 NodeManagers
+resource_profiles:
+  migration:
+    description: "HDFS to Ozone migration (DEV)"
+    target_data_per_executor_gb: 2
+    max_executors: 16
+    spark_config:
+      spark.executor.cores: "1"
+      spark.executor.memory: "4g"
+      spark.executor.memoryOverhead: "1g"
+      spark.serializer: "org.apache.spark.serializer.KryoSerializer"
+      spark.sql.adaptive.enabled: "true"
+      spark.sql.adaptive.coalescePartitions.enabled: "true"
+      spark.dynamicAllocation.enabled: "true"
+      spark.dynamicAllocation.minExecutors: "1"
+      spark.dynamicAllocation.maxExecutors: "16"
+    yarn_queue: default
+    priority: high
+
+  etl_standard:
+    description: "Standard Ozone ETL (DEV)"
+    target_data_per_executor_gb: 1
+    max_executors: 12
+    spark_config:
+      spark.executor.cores: "1"
+      spark.executor.memory: "4g"
+      spark.executor.memoryOverhead: "1g"
+      spark.sql.adaptive.enabled: "true"
+      spark.sql.adaptive.skewJoin.enabled: "true"
+      spark.dynamicAllocation.enabled: "true"
+      spark.dynamicAllocation.minExecutors: "1"
+      spark.dynamicAllocation.maxExecutors: "12"
+    yarn_queue: default
+    priority: medium
+
+  etl_heavy:
+    description: "Join-heavy ETL (DEV)"
+    target_data_per_executor_gb: 1.5
+    max_executors: 10
+    spark_config:
+      spark.executor.cores: "2"
+      spark.executor.memory: "4g"
+      spark.executor.memoryOverhead: "1g"
+      spark.sql.adaptive.skewJoin.enabled: "true"
+      spark.sql.adaptive.localShuffleReader.enabled: "true"
+      spark.dynamicAllocation.enabled: "true"
+      spark.dynamicAllocation.minExecutors: "1"
+      spark.dynamicAllocation.maxExecutors: "10"
+    yarn_queue: default
+    priority: high
+
+  analytical:
+    description: "Analytical workloads (DEV)"
+    target_data_per_executor_gb: 2
+    max_executors: 8
+    spark_config:
+      spark.executor.cores: "2"
+      spark.executor.memory: "6g"
+      spark.executor.memoryOverhead: "2g"
+      spark.sql.adaptive.advisoryPartitionSizeInBytes: "134217728"
+      spark.dynamicAllocation.enabled: "true"
+      spark.dynamicAllocation.minExecutors: "1"
+      spark.dynamicAllocation.maxExecutors: "8"
+    yarn_queue: default
+    priority: medium

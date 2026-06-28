@@ -1,0 +1,21 @@
+# Shared financial medallion schema — paths come from environments/{env}.yaml (medallion section)
+database: sbi_financial
+
+tables:
+  brnz:
+    name: spark_catalog.sbi_financial.brnz_transactions
+    partition_cols:
+      - transaction_date
+  slvr:
+    name: spark_catalog.sbi_financial.slvr_transactions
+    partition_cols:
+      - transaction_date
+  gld:
+    name: spark_catalog.sbi_financial.gld_daily_report
+    partition_cols:
+      - report_date
+
+sdv:
+  target_gb: 10
+  seed_rows: 5000
+  batch_rows: 100000

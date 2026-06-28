@@ -1,0 +1,46 @@
+environment: dev
+hdfs_uri: hdfs://ns1
+ofs_uri: ofs://ozone1782570080
+hms_host: ccycloud-1.jshin-sbi.root.comops.site
+hms_hosts: ccycloud-1.jshin-sbi.root.comops.site,ccycloud-6.jshin-sbi.root.comops.site
+hms_uris: thrift://ccycloud-1.jshin-sbi.root.comops.site:9083,thrift://ccycloud-6.jshin-sbi.root.comops.site:9083
+hms_port: "9083"
+krb_realm: ${KRB_REALM}
+ozone_om_service_id: ozone1782570080
+ozone_om_address: ccycloud-2.jshin-sbi.root.comops.site:9862,ccycloud-8.jshin-sbi.root.comops.site:9862
+warehouse_base: ofs://ozone1782570080/dev/data
+yarn_queue_default: default
+
+# Jenkins / CloudCat rebuild spec (internal DEV provisioning)
+infrastructure:
+  jenkins_build: governance/configs/infrastructure/dev_jenkins_build.yaml
+  rebuild_doc: docs/infrastructure/dev-jenkins-rebuild.md
+
+# DEV YARN cluster capacity (Gateway DEV environment)
+cluster:
+  total_vcores: 32
+  total_memory_gb: 256
+  node_managers: 9
+  cores_per_node: 4          # 32 / 9 (rounded)
+  memory_per_node_gb: 28       # 256 / 9 (rounded)
+  yarn_reserved_ratio: 0.15    # 15% headroom for AM / system / other apps
+
+# Spark resource caps derived from cluster size above
+resource_limits:
+  max_executors_absolute: 16
+  max_executor_cores: 2
+  executor_memory: "4g"
+  executor_memory_overhead: "1g"
+  driver_memory: "2g"
+  driver_cores: 1
+  shuffle_partitions: 32
+
+medallion:
+  hdfs_raw_path: hdfs://ns1/dev/raw/financial/transactions
+  brnz_base: ofs://ozone1782570080/dev/data/brnz
+  slvr_base: ofs://ozone1782570080/dev/data/slvr
+  gld_base: ofs://ozone1782570080/dev/data/gld
+  table_suffixes:
+    brnz: transactions
+    slvr: transactions
+    gld: daily_transaction_report

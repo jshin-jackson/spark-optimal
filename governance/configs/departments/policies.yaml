@@ -1,0 +1,21 @@
+departments:
+  risk_management:
+    yarn_queue: risk
+    priority_boost: 1.5
+    guaranteed_cores: 5000
+    max_cores: 8000
+    sla_max_latency_minutes: 15
+
+  fraud_detection:
+    yarn_queue: fraud
+    priority_boost: 1.8
+    guaranteed_cores: 3000
+    max_cores: 6000
+    sla_max_latency_minutes: 5
+
+  data_warehouse:
+    yarn_queue: etl
+    priority_boost: 1.0
+    guaranteed_cores: 8000
+    max_cores: 15000
+    sla_max_latency_minutes: 60

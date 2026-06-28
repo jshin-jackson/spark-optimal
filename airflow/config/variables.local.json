@@ -1,0 +1,11 @@
+{
+  "spark_optimal_home": "/Users/jackson/Cloudera/Customer/SBI/spark-optimal",
+  "sbi_env": "dev",
+  "financial_target_gb": "1",
+  "hdfs_uri": "hdfs://ns1",
+  "hdfs_financial_raw": "hdfs://ns1/dev/raw/financial/transactions",
+  "financial_local_output": "/Users/jackson/Cloudera/Customer/SBI/spark-optimal/data/output/financial",
+  "schedule_financial_medallion": "@once",
+  "schedule_iceberg_maintenance": "@weekly",
+  "sbi_alert_email": ""
+}

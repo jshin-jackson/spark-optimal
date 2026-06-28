@@ -1,0 +1,58 @@
+resource_profiles:
+  migration:
+    description: "HDFS to Ozone migration"
+    target_data_per_executor_gb: 2
+    max_executors: 200
+    spark_config:
+      spark.executor.cores: "4"
+      spark.executor.memory: "8g"
+      spark.executor.memoryOverhead: "2g"
+      spark.serializer: "org.apache.spark.serializer.KryoSerializer"
+      spark.sql.adaptive.enabled: "true"
+      spark.sql.adaptive.coalescePartitions.enabled: "true"
+      spark.dynamicAllocation.enabled: "true"
+      spark.dynamicAllocation.minExecutors: "5"
+    yarn_queue: migration
+    priority: high
+
+  etl_standard:
+    description: "Standard Ozone ETL"
+    target_data_per_executor_gb: 1
+    max_executors: 100
+    spark_config:
+      spark.executor.cores: "4"
+      spark.executor.memory: "8g"
+      spark.executor.memoryOverhead: "2g"
+      spark.sql.adaptive.enabled: "true"
+      spark.sql.adaptive.skewJoin.enabled: "true"
+      spark.dynamicAllocation.enabled: "true"
+      spark.dynamicAllocation.minExecutors: "2"
+    yarn_queue: etl
+    priority: medium
+
+  etl_heavy:
+    description: "Join-heavy ETL"
+    target_data_per_executor_gb: 1.5
+    max_executors: 150
+    spark_config:
+      spark.executor.cores: "6"
+      spark.executor.memory: "12g"
+      spark.executor.memoryOverhead: "3g"
+      spark.sql.adaptive.skewJoin.enabled: "true"
+      spark.sql.adaptive.localShuffleReader.enabled: "true"
+      spark.dynamicAllocation.enabled: "true"
+    yarn_queue: etl
+    priority: high
+
+  analytical:
+    description: "Large analytical workloads"
+    target_data_per_executor_gb: 2
+    max_executors: 120
+    spark_config:
+      spark.executor.cores: "8"
+      spark.executor.memory: "16g"
+      spark.executor.memoryOverhead: "4g"
+      spark.sql.adaptive.advisoryPartitionSizeInBytes: "268435456"
+      spark.dynamicAllocation.enabled: "true"
+    yarn_queue: analytics
+    priority: medium

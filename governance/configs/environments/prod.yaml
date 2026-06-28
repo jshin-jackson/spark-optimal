@@ -1,0 +1,39 @@
+environment: prod
+hdfs_uri: hdfs://ns1
+ofs_uri: ofs://ozone1782570080
+hms_host: ccycloud-1.jshin-sbi.root.comops.site
+hms_hosts: ccycloud-1.jshin-sbi.root.comops.site,ccycloud-6.jshin-sbi.root.comops.site
+hms_uris: thrift://ccycloud-1.jshin-sbi.root.comops.site:9083,thrift://ccycloud-6.jshin-sbi.root.comops.site:9083
+hms_port: "9083"
+krb_realm: ${KRB_REALM}
+ozone_om_service_id: ozone1782570080
+ozone_om_address: ccycloud-2.jshin-sbi.root.comops.site:9862,ccycloud-8.jshin-sbi.root.comops.site:9862
+warehouse_base: ofs://ozone1782570080/prod/data
+yarn_queue_default: etl
+
+cluster:
+  total_vcores: 26496
+  total_memory_gb: 123566
+  node_managers: 214
+  cores_per_node: 124
+  memory_per_node_gb: 577
+  yarn_reserved_ratio: 0.10
+
+resource_limits:
+  max_executors_absolute: 200
+  max_executor_cores: 8
+  executor_memory: "8g"
+  executor_memory_overhead: "2g"
+  driver_memory: "4g"
+  driver_cores: 2
+  shuffle_partitions: 200
+
+medallion:
+  hdfs_raw_path: hdfs://ns1/prod/raw/financial/transactions
+  brnz_base: ofs://ozone1782570080/prod/data/brnz
+  slvr_base: ofs://ozone1782570080/prod/data/slvr
+  gld_base: ofs://ozone1782570080/prod/data/gld
+  table_suffixes:
+    brnz: transactions
+    slvr: transactions
+    gld: daily_transaction_report
