@@ -611,6 +611,21 @@ pip install -r requirements/financial.txt
 # Python 3.9+ 필요
 ```
 
+### Q. Spark Job 실패 — Iceberg/Ozone JAR not found
+
+parcel 빌드마다 JAR 파일명 suffix가 다릅니다 (예: `700-158` vs `600-325`).
+
+```bash
+ls /opt/cloudera/parcels/CDH/jars/iceberg-spark-runtime*.jar
+ls /opt/cloudera/parcels/CDH/jars/ozone-filesystem-hadoop3*.jar
+
+# env.conf 의 ICEBERG_JAR, SPARK_OZONE_JARS 를 실제 파일명으로 수정
+cp config/env.template.conf config/env.conf   # template 갱신 후 재복사
+vi config/env.conf
+
+bash scripts/deployment/verify_jars.sh
+```
+
 더 많은 해결 방법: [docs/troubleshooting/common-issues.md](docs/troubleshooting/common-issues.md)
 
 ---
