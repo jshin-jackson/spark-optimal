@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Step 2: Upload generated financial JSONL files to HDFS.
+# Target path MUST be inside an HDFS Encryption Zone (Ranger KMS key hdfs_encryption_key).
+# Run first: bash scripts/infrastructure/setup_hdfs_encryption_zone.sh
 # HDFS write requires Ranger HDFS policy for ${PRINCIPAL} on ${HDFS_TARGET} — not chmod/chown.
 set -euo pipefail
 

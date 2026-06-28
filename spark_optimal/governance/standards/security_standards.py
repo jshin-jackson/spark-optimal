@@ -13,12 +13,14 @@ GATEWAY_SECURITY_CHECKLIST = [
 
 # Authorization: Apache Ranger only (HDFS, HMS, Spark, Ozone). No filesystem ACL bypass.
 RANGER_AUTHORIZATION_CHECKLIST = [
-    "HDFS access is granted only via Ranger HDFS policies (not chmod/chown/setfacl)",
-    "Ozone volume/bucket/prefix access is granted only via Ranger Ozone policies",
-    "Hive/Iceberg HMS access is granted only via Ranger Hive policies",
-    "Spark jobs inherit systest identity; Ranger enforces access on executors",
-    "On Permission denied with valid klist: update Ranger — see governance/configs/security/ranger.yaml",
-    "Run scripts/security/security_check.sh before spark-submit to probe Ranger-backed paths",
+    "HDFS access is granted only via Ranger cm_hdfs policies (not chmod/chown/setfacl)",
+    "Iceberg on Ozone (Cloudera CDP 7.3.1): cm_hive Storage Handler (iceberg, RW Storage) + SQL table + URL + cm_ozone per table",
+    "SBI pair: cm_hive SQL policy {table} + cm_ozone policy {table} — same name as Iceberg table",
+    "Also required: cm_hive URL policy {table}-url for ofs:// table location (Cloudera ozone-policy doc)",
+    "RW Storage does NOT grant data access — SQL + URL + cm_ozone policies are still required",
+    "systest must hold all policies to run Spark, Hive, and Impala without authz gaps",
+    "Run scripts/security/print_ranger_iceberg_pairs.sh — see docs/operations/ranger-iceberg-ozone-pairs.md",
+    "Run scripts/security/security_check.sh before spark-submit",
 ]
 
 OZONE_ENCRYPTION_CHECKLIST = [
@@ -28,6 +30,15 @@ OZONE_ENCRYPTION_CHECKLIST = [
     "Ranger KMS: systest needs Generate EEK + Decrypt EEK on ozone_encryption_key",
     "KMS_PROVIDER_URI set in env.conf (from hdfs getconf -confKey hadoop.security.key.provider.path)",
     "Run scripts/infrastructure/setup_ozone_encrypted_bucket.sh before first pipeline",
+]
+
+HDFS_ENCRYPTION_CHECKLIST = [
+    "All HDFS raw ingest data uses Ranger KMS key hdfs_encryption_key (Encryption Zone)",
+    "Create zone with: hdfs crypto -createZone -keyName hdfs_encryption_key -path /{env}/raw/financial/transactions",
+    "Ranger KMS: hdfs (NameNode) service user needs Get Metadata + Generate EEK on hdfs_encryption_key",
+    "Ranger KMS: systest needs Generate EEK + Decrypt EEK on hdfs_encryption_key",
+    "Encryption Zone requires an empty directory — run setup before first upload",
+    "Run scripts/infrastructure/setup_hdfs_encryption_zone.sh before upload_to_hdfs.sh",
 ]
 
 FORBIDDEN_PERMISSION_METHODS = [

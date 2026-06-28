@@ -75,6 +75,14 @@ def load_ozone_encryption_config() -> dict[str, Any]:
     return load_yaml("governance/configs/security/ozone_encryption.yaml")
 
 
+def load_hdfs_encryption_config() -> dict[str, Any]:
+    return load_yaml("governance/configs/security/hdfs_encryption.yaml")
+
+
+def load_ranger_iceberg_ozone_pairs() -> dict[str, Any]:
+    return load_yaml("governance/configs/security/ranger_iceberg_ozone_pairs.yaml")
+
+
 def load_resource_profiles(env: str | None = None) -> dict[str, Any]:
     base = load_yaml("governance/configs/workloads/resource_profiles.yaml")
     profiles = base.get("resource_profiles", {})

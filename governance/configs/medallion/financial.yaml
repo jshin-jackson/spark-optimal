@@ -1,4 +1,6 @@
 # Shared financial medallion schema — paths come from environments/{env}.yaml (medallion section)
+# Ranger (Cloudera CDP 7.3.1): cm_hive Storage Handler + SQL {table} + URL {table}-url + cm_ozone {table}
+# See governance/configs/security/ranger_iceberg_ozone_pairs.yaml
 database: sbi_financial
 
 tables:

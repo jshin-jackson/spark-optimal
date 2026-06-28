@@ -1,0 +1,203 @@
+# Ranger policies for Iceberg tables on Ozone (CDP 7.3.1 — Cloudera-aligned)
+#
+# Cloudera requires MULTIPLE Ranger policies for Iceberg on Ozone:
+#   1. Hadoop SQL Storage Handler — storage-type iceberg, RW Storage (CREATE/ALTER location)
+#   2. Hadoop SQL SQL table policy — database/table/columns (SELECT, CREATE, …)
+#   3. Hadoop SQL URL policy — ofs://volume/bucket/key (Ozone table location)
+#   4. cm_ozone policy — volume/bucket/key (OFS file access)
+#
+# In Ranger UI the Hadoop SQL service is named cm_hive (Hive, Impala, Hue, Spark SQL).
+#
+# SBI naming (where policy names must be unique within a service):
+#   cm_hive SQL table policy  → {table_name}           (e.g. brnz_transactions)
+#   cm_hive URL policy        → {table_name}-url
+#   cm_hive Storage Handler   → cluster shared OR {table_name}-storage
+#   cm_ozone policy           → {table_name}           (paired with SQL table policy)
+
+enabled: true
+principal: systest@${KRB_REALM}
+
+cloudera_documentation:
+  ranger_intro:
+    url: https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/spark-iceberg/topics/iceberg-ranger-introduction.html
+    summary: "Two Hadoop SQL policies for Iceberg — file/storage handler + SQL table query"
+  storage_handler:
+    url: https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/spark-iceberg/topics/iceberg-setup-ranger.html
+    summary: "Edit all - storage-type, storage-url — iceberg + RW Storage (not data access)"
+  sql_table_policy:
+    url: https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-setup-ranger-database-access.html
+    summary: "Add SQL policy — database, table, columns — Select/Create/Alter/All"
+  ozone_policy:
+    url: https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html
+    summary: "Enable Ozone Ranger service + cm_ozone policy + Hadoop SQL all - url for Ozone"
+
+ranger_services:
+  hadoop_sql: cm_hive
+  hadoop_sql_cloudera_name: Hadoop SQL
+  ozone: cm_ozone
+  hdfs: cm_hdfs
+
+# Prerequisites (Cloudera iceberg-ozone-policy.html)
+ozone_ranger_prerequisites:
+  cm_property: ranger_service
+  cm_service: Ozone
+  note: "Enable ranger_service on Ozone in CM before cm_ozone policies apply"
+
+# Cluster-wide Hadoop SQL Storage Handler (Cloudera: edit default all - storage-type, storage-url)
+# RW Storage grants CREATE/ALTER table location reference only — NOT table data access.
+cluster_policies:
+  storage_handler:
+    ranger_service: cm_hive
+    policy_type: storage_handler
+    policy_name: "all - storage-type, storage-url"
+    edit_default: true
+    storage_type: iceberg
+    storage_url: "*"
+    include: true
+    permissions: [RW Storage]
+    principals: ["systest@${KRB_REALM}"]
+    cloudera_doc: storage_handler
+
+  # Optional: edit default Hadoop SQL all - url for broad Ozone access (Cloudera ozone doc)
+  # Prefer per-table URL policies below for least privilege.
+  hadoop_sql_url_default:
+    ranger_service: cm_hive
+    policy_type: url
+    policy_name: all-url
+    edit_default: true
+    optional: true
+    note: "Cloudera preloads hive/impala/hue/admin on all Ozone URLs; add systest or use per-table URL"
+
+# Database-level SQL policy (supplement — does not replace per-table policies)
+database_policy:
+  ranger_service: cm_hive
+  policy_type: sql_table
+  policy_name: sbi_financial
+  database: sbi_financial
+  table: "*"
+  columns: "*"
+  permissions: [create, select, update, alter, drop, index, lock, all]
+
+# cm_ozone infrastructure — volume/bucket creation (separate from per-table key policies)
+infrastructure_ozone:
+  ranger_service: cm_ozone
+  edit_default_policy: "all - volume, bucket, key"
+  policies:
+    - policy_name: "{env}-volume"
+      volume: "{env}"
+      resource_type: volume
+      permissions: [read, write, create]
+    - policy_name: "{env}-data-bucket"
+      volume: "{env}"
+      bucket: data
+      resource_type: bucket
+      permissions: [read, write, create, delete]
+
+# Per-table policy set — register ALL rows for each Iceberg table on Ozone
+tables:
+  - layer: bronze
+    table_name: brnz_transactions
+    catalog_table: spark_catalog.sbi_financial.brnz_transactions
+    ozone_volume: "{env}"
+    ozone_bucket: data
+    ozone_key: brnz/transactions
+    hadoop_sql:
+      sql_table:
+        policy_name: brnz_transactions
+        database: sbi_financial
+        table: brnz_transactions
+        columns: "*"
+        permissions: [select, update, create, drop, alter, index, lock, all]
+      url:
+        policy_name: brnz_transactions-url
+        url_pattern: "ofs://ozone1782570080/{env}/data/brnz/transactions"
+        permissions: [read, write]
+      storage_handler:
+        optional_per_table: true
+        policy_name: brnz_transactions-storage
+        storage_type: iceberg
+        storage_url: "sbi_financial/brnz_transactions"
+        permissions: [RW Storage]
+        note: "Skip if cluster storage_handler with storage_url * covers systest"
+    ozone:
+      policy_name: brnz_transactions
+      volume: "{env}"
+      bucket: data
+      key: brnz/transactions
+      permissions: [read, write, create, delete]
+    engines: [Spark, Hive, Impala]
+
+  - layer: silver
+    table_name: slvr_transactions
+    catalog_table: spark_catalog.sbi_financial.slvr_transactions
+    ozone_volume: "{env}"
+    ozone_bucket: data
+    ozone_key: slvr/transactions
+    hadoop_sql:
+      sql_table:
+        policy_name: slvr_transactions
+        database: sbi_financial
+        table: slvr_transactions
+        columns: "*"
+        permissions: [select, update, create, drop, alter, index, lock, all]
+      url:
+        policy_name: slvr_transactions-url
+        url_pattern: "ofs://ozone1782570080/{env}/data/slvr/transactions"
+        permissions: [read, write]
+      storage_handler:
+        optional_per_table: true
+        policy_name: slvr_transactions-storage
+        storage_type: iceberg
+        storage_url: "sbi_financial/slvr_transactions"
+        permissions: [RW Storage]
+    ozone:
+      policy_name: slvr_transactions
+      volume: "{env}"
+      bucket: data
+      key: slvr/transactions
+      permissions: [read, write, create, delete]
+    engines: [Spark, Hive, Impala]
+
+  - layer: gold
+    table_name: gld_daily_report
+    catalog_table: spark_catalog.sbi_financial.gld_daily_report
+    ozone_volume: "{env}"
+    ozone_bucket: data
+    ozone_key: gld/daily_transaction_report
+    hadoop_sql:
+      sql_table:
+        policy_name: gld_daily_report
+        database: sbi_financial
+        table: gld_daily_report
+        columns: "*"
+        permissions: [select, update, create, drop, alter, index, lock, all]
+      url:
+        policy_name: gld_daily_report-url
+        url_pattern: "ofs://ozone1782570080/{env}/data/gld/daily_transaction_report"
+        permissions: [read, write]
+      storage_handler:
+        optional_per_table: true
+        policy_name: gld_daily_report-storage
+        storage_type: iceberg
+        storage_url: "sbi_financial/gld_daily_report"
+        permissions: [RW Storage]
+    ozone:
+      policy_name: gld_daily_report
+      volume: "{env}"
+      bucket: data
+      key: gld/daily_transaction_report
+      permissions: [read, write, create, delete]
+    engines: [Spark, Hive, Impala]
+
+setup:
+  doc: docs/operations/ranger-iceberg-ozone-pairs.md
+  print_script: scripts/security/print_ranger_iceberg_pairs.sh
+
+policy_request_template:
+  summary: "Cloudera Iceberg-on-Ozone Ranger policies for table {table_name} ({env})"
+  checklist:
+    - "cm_hive Storage Handler — iceberg + RW Storage (cluster default or {table_name}-storage)"
+    - "cm_hive SQL table policy '{table_name}' — sbi_financial.{table_name}, columns *"
+    - "cm_hive URL policy '{table_name}-url' — {ozone_url} Read+Write"
+    - "cm_ozone policy '{table_name}' — volume/bucket/key for table data path"
+    - "SBI pair: cm_hive SQL '{table_name}' + cm_ozone '{table_name}' must both include systest"

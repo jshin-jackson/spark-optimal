@@ -27,6 +27,13 @@ ozone_encryption:
   config: governance/configs/security/ozone_encryption.yaml
   setup_script: scripts/infrastructure/setup_ozone_encrypted_bucket.sh
 
+hdfs_encryption:
+  enabled: true
+  kms_service: cm_kms
+  encryption_key: hdfs_encryption_key
+  config: governance/configs/security/hdfs_encryption.yaml
+  setup_script: scripts/infrastructure/setup_hdfs_encryption_zone.sh
+
 cluster:
   total_vcores: 26496
   total_memory_gb: 123566

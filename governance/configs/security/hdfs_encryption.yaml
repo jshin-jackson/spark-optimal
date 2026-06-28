@@ -1,0 +1,49 @@
+# HDFS Transparent Data Encryption (TDE) — Ranger KMS Encryption Zones
+#
+# All spark-optimal HDFS raw ingest paths MUST live inside an Encryption Zone (EZ).
+# EZ is created on an empty directory via: hdfs crypto -createZone -keyName <key> -path <path>
+# Key registered in Ranger KMS (service cm_kms): hdfs_encryption_key
+
+enabled: true
+kms_service: cm_kms
+encryption_key: hdfs_encryption_key
+cipher: AES/CTR/NoPadding
+key_length_bits: 256
+
+# Primary: financial raw JSON ingest (medallion.hdfs_raw_path in environments/*.yaml)
+encryption_zones:
+  financial_raw:
+    path_by_environment:
+      dev: /dev/raw/financial/transactions
+      uat: /uat/raw/financial/transactions
+      prod: /prod/raw/financial/transactions
+    hdfs_uri_pattern: "hdfs://ns1/{env}/raw/financial/transactions"
+    required: true
+
+  spark_event_log:
+    path: /user/spark/applicationHistory
+    hdfs_uri: hdfs:///user/spark/applicationHistory
+    required: false
+    note: "Optional — matches spark.eventLog.dir in conf/*/spark-defaults.conf"
+
+# Spark/Hadoop — KMS URI shared with Ozone (env.conf KMS_PROVIDER_URI)
+hadoop_property: hadoop.security.key.provider.path
+
+# Ranger KMS key ACLs (Ranger UI → KMS → cm_kms → hdfs_encryption_key)
+ranger_kms:
+  key_name: hdfs_encryption_key
+  hdfs_service_user_permissions:
+    - Get Metadata
+    - Generate EEK
+  gateway_principal_permissions:
+    - Generate EEK
+    - Decrypt EEK
+  note: "hdfs user = NameNode service (e.g. hdfs/_HOST@REALM). Ozone uses ozone_encryption_key."
+
+setup:
+  script: scripts/infrastructure/setup_hdfs_encryption_zone.sh
+  doc: docs/operations/hdfs-encryption.md
+  create_zone_example: >-
+    hdfs dfs -mkdir -p /dev/raw/financial/transactions
+    hdfs crypto -createZone -keyName hdfs_encryption_key
+    -path /dev/raw/financial/transactions

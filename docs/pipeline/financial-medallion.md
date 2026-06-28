@@ -28,10 +28,33 @@ graph LR
 | Silver | `spark_catalog.sbi_financial.slvr_transactions` | `.../slvr/transactions` |
 | Gold | `spark_catalog.sbi_financial.gld_daily_report` | `.../gld/daily_transaction_report` |
 
+## Ranger paired policies (Cloudera CDP 7.3.1)
+
+Each Iceberg table on Ozone needs **Hadoop SQL (`cm_hive`) + `cm_ozone`** policies per [Cloudera docs](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html):
+
+| Table | cm_hive SQL | cm_hive URL | cm_ozone |
+|-------|-------------|-------------|----------|
+| `brnz_transactions` | `brnz_transactions` | `brnz_transactions-url` | `brnz_transactions` |
+| `slvr_transactions` | `slvr_transactions` | `slvr_transactions-url` | `slvr_transactions` |
+| `gld_daily_report` | `gld_daily_report` | `gld_daily_report-url` | `gld_daily_report` |
+
+Plus cluster **Storage Handler** (iceberg, RW Storage). See [Ranger Iceberg–Ozone Pairs](../operations/ranger-iceberg-ozone-pairs.md).
+
+```bash
+bash scripts/security/print_ranger_iceberg_pairs.sh
+```
+
 ## Ranger (required)
 
 All HDFS, Ozone, and Hive/Iceberg access must be granted via **Apache Ranger** for `systest@...`.  
 Do not use filesystem ACLs. See [Ranger Authorization](../operations/ranger-authorization.md) and `governance/configs/security/ranger.yaml`.
+
+## HDFS encryption (required)
+
+HDFS raw ingest path uses **TDE** via **Encryption Zone** with Ranger KMS key **`hdfs_encryption_key`**.  
+Create zone: `hdfs crypto -createZone -keyName hdfs_encryption_key -path /{env}/raw/financial/transactions`  
+Run first: `bash scripts/infrastructure/setup_hdfs_encryption_zone.sh`  
+See [HDFS Encryption](../operations/hdfs-encryption.md).
 
 ## Ozone encryption (required)
 

@@ -51,43 +51,57 @@ governance/configs/environments/{dev,uat,prod}.yaml  → medallion section
 | Financial raw ingest | `hdfs://ns1/dev/raw/financial/transactions` | read, write, execute |
 | Spark event log | `hdfs:///user/spark/applicationHistory` | read, write, execute |
 
-### Ozone (Ranger Ozone plugin)
+### Ozone + Iceberg (Cloudera CDP 7.3.1)
 
-| Purpose | Example (DEV) | Actions |
-|---------|---------------|---------|
-| Volume | `dev` | read, write, create |
-| Bucket | `dev/data` | read, write, create, delete |
-| Medallion prefixes | `ofs://ozone1782570080/dev/data/{brnz,slvr,gld}` | read, write, create, delete |
+Each Iceberg table on Ozone requires policies documented in [Ranger Iceberg–Ozone Pairs](ranger-iceberg-ozone-pairs.md) (Cloudera official):
 
-Volume/bucket **creation** (`ozone sh volume create`, `bucket create`) succeeds only if Ranger allows it for `systest`.
+| # | Service | Type | SBI policy name | Cloudera reference |
+|---|---------|------|-----------------|-------------------|
+| 1 | **cm_hive** (Hadoop SQL) | Storage Handler | edit `all - storage-type, storage-url` | [setup-ranger](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/spark-iceberg/topics/iceberg-setup-ranger.html) |
+| 2 | **cm_hive** | SQL table | **`{table}`** | [database-access](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-setup-ranger-database-access.html) |
+| 3 | **cm_hive** | URL (`ofs://…`) | **`{table}-url`** | [ozone-policy](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html) |
+| 4 | **cm_ozone** | volume/bucket/key | **`{table}`** | [ozone-policy](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html) |
 
-### Hive / HMS (Ranger Hive plugin)
+**SBI pair:** cm_hive SQL **`aaa`** + cm_ozone **`aaa`**. RW Storage alone does not grant data access.
 
-| Purpose | Resource | Actions |
-|---------|----------|---------|
-| Iceberg catalog | database `sbi_financial` | create, select, update, alter, drop, … |
-| Medallion tables | `brnz_transactions`, `slvr_transactions`, `gld_daily_report` | as required by ETL |
+Print full checklist:
 
-### Spark (Ranger Spark plugin)
+```bash
+bash scripts/security/print_ranger_iceberg_pairs.sh
+```
 
-Where the Spark Ranger plugin is enabled, align policies with Hive/HDFS/Ozone resources used by Spark SQL and Iceberg jobs. Spark does **not** bypass Ranger.
+**Infrastructure (cm_ozone):** volume `{env}`, bucket `{env}/data` — for bucket creation; does not replace per-table policies.
 
-### Ranger KMS (Ozone TDE)
+### Hive / HMS
 
-All Medallion **Ozone** data is encrypted at rest with Ranger KMS key **`ozone_encryption_key`** (service `cm_kms`).
+Database policy **`sbi_financial`** on **cm_hive** supplements but does **not** replace per-table SQL + URL + cm_ozone policies above.
 
-| Principal | Permissions on `ozone_encryption_key` |
-|-----------|--------------------------------------|
-| Ozone Manager service user | Get Metadata, Generate EEK |
-| `systest` (Gateway / Spark) | Generate EEK, Decrypt EEK |
+### Spark / Hive / Impala
 
-Bucket must be created with encryption at creation time:
+All three engines use **Hadoop SQL** (`cm_hive`) + **cm_ozone** for Iceberg on Ozone. Spark does not bypass Ranger.
+
+### Ranger KMS (HDFS + Ozone TDE)
+
+HDFS and Ozone use **separate** Ranger KMS keys on service **`cm_kms`**:
+
+| Key | Use | Principals (permissions on key) |
+|-----|-----|--------------------------------|
+| **`hdfs_encryption_key`** | HDFS Encryption Zones | **hdfs** (NN): Get Metadata, Generate EEK · **systest**: Generate EEK, Decrypt EEK |
+| **`ozone_encryption_key`** | Ozone encrypted bucket | **OM** service user: Get Metadata, Generate EEK · **systest**: Generate EEK, Decrypt EEK |
+
+HDFS Encryption Zone (empty directory required):
+
+```bash
+hdfs crypto -createZone -keyName hdfs_encryption_key -path /dev/raw/financial/transactions
+```
+
+Ozone bucket must be created with encryption at creation time:
 
 ```bash
 ozone sh bucket create --volume dev --bucket data --bucketkey ozone_encryption_key
 ```
 
-See [Ozone Encryption](ozone-encryption.md) and `governance/configs/security/ozone_encryption.yaml`.
+See [HDFS Encryption](hdfs-encryption.md), [Ozone Encryption](ozone-encryption.md), `hdfs_encryption.yaml`, and `ozone_encryption.yaml`.
 
 ---
 
@@ -115,8 +129,9 @@ Failures with an valid ticket → request Ranger policy update using `governance
 | Symptom | Likely cause | Action |
 |---------|--------------|--------|
 | `Permission denied` / `AccessControlException` on `hdfs dfs` | Ranger HDFS policy missing | Add policy for `${PRINCIPAL}` on path in `ranger.yaml` |
-| Executor cannot read/write OFS | Ranger Ozone policy missing | Add Ozone policy for volume/bucket/prefix |
-| `CREATE TABLE` / HMS / Iceberg failure | Ranger Hive policy missing | Grant `sbi_financial` DB + table privileges |
+| Executor cannot read/write OFS | **cm_ozone** paired policy missing for table | Add cm_ozone policy named = table on OFS path |
+| `CREATE TABLE` / HMS / Iceberg failure | **cm_hive** paired policy missing | Add cm_hive policy named = table on `sbi_financial.<table>` |
+| Hive/Impala OK on one table, not another | Incomplete paired set | Register both cm_hive + cm_ozone for **each** table |
 | `GSS initiate failed` | Kerberos (not Ranger) | `kinit_manager.sh` |
 | Path does not exist | Not Ranger — run mkdir after write policy exists | `hdfs dfs -mkdir -p` or Spark create |
 
@@ -124,6 +139,7 @@ Failures with an valid ticket → request Ranger policy update using `governance
 
 ## Related docs
 
+- [Ranger Iceberg–Ozone Paired Policies](ranger-iceberg-ozone-pairs.md)
 - [Gateway Runbook](gateway-runbook.md)
 - [Troubleshooting](../troubleshooting/common-issues.md)
 - [Spark Job Standards](../standards/spark-job-standards.md)

@@ -11,21 +11,45 @@ principal_note: "Set KRB_REALM in config/env.conf; default QE-INFRA-AD.CLOUDERA.
 
 services:
   hdfs:
+    ranger_service: cm_hdfs
     plugin: ranger-hdfs-plugin
     description: Raw ingest paths, Spark event logs, delegation token filesystem access
   hive:
+    ranger_service: cm_hive
     plugin: ranger-hive-plugin
     description: HMS metadata — database, table, column privileges for Iceberg catalog
   ozone:
+    ranger_service: cm_ozone
     plugin: ranger-ozone-plugin
-    description: Medallion volume/bucket/prefix read-write for Bronze/Silver/Gold
+    description: Medallion Ozone data paths — paired with cm_hive per Iceberg table
   spark:
+    ranger_service: cm_spark
     plugin: ranger-spark-plugin
-    description: Spark SQL / job access where Spark Ranger plugin is enabled (align with Hive/HDFS)
+    description: Spark SQL / job access where Spark Ranger plugin is enabled (align with Hive/HDFS/Ozone)
   ranger_kms:
     plugin: ranger-kms
     service: cm_kms
-    description: Ozone TDE encryption key ozone_encryption_key — all Medallion Ozone data
+    description: TDE keys hdfs_encryption_key (HDFS EZ) and ozone_encryption_key (Ozone bucket)
+
+# Iceberg on Ozone — Cloudera CDP 7.3.1 Ranger model (Hadoop SQL + cm_ozone)
+iceberg_ozone_pairs:
+  config: governance/configs/security/ranger_iceberg_ozone_pairs.yaml
+  doc: docs/operations/ranger-iceberg-ozone-pairs.md
+  print_script: scripts/security/print_ranger_iceberg_pairs.sh
+  cloudera_docs:
+    - https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/spark-iceberg/topics/iceberg-ranger-introduction.html
+    - https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html
+    - https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/spark-iceberg/topics/iceberg-setup-ranger.html
+  rule: "Per table: cm_hive Storage Handler + SQL {table} + URL {table}-url + cm_ozone {table}"
+  sbi_pair: "cm_hive SQL policy name = cm_ozone policy name = table name"
+  engines: [Spark, Hive, Impala]
+
+# HDFS TDE — raw ingest paths use Ranger KMS Encryption Zones (see hdfs_encryption.yaml)
+hdfs_encryption:
+  kms_service: cm_kms
+  encryption_key: hdfs_encryption_key
+  config: governance/configs/security/hdfs_encryption.yaml
+  doc: docs/operations/hdfs-encryption.md
 
 # Ozone TDE — all Medallion buckets use Ranger KMS key ozone_encryption_key (see ozone_encryption.yaml)
 ozone_encryption:
@@ -53,71 +77,93 @@ environments:
       - path: hdfs:///user/spark/applicationHistory
         actions: [read, write, execute]
         note: Spark history (conf/*/spark-defaults.conf)
-    ozone:
+    # Ozone volume/bucket — infrastructure; table data uses iceberg_ozone_pairs (per-table)
+    ozone_infrastructure:
       - path: ofs://ozone1782570080/dev
         resource_type: volume
+        policy_name: dev-volume
         actions: [read, write, create]
       - path: ofs://ozone1782570080/dev/data
         resource_type: bucket
+        policy_name: dev-data-bucket
         actions: [read, write, create, delete]
-      - path: ofs://ozone1782570080/dev/data/brnz
-        actions: [read, write, create, delete]
-      - path: ofs://ozone1782570080/dev/data/slvr
-        actions: [read, write, create, delete]
-      - path: ofs://ozone1782570080/dev/data/gld
-        actions: [read, write, create, delete]
-    hive:
+    hive_database:
+      ranger_service: cm_hive
+      policy_name: sbi_financial
       database: sbi_financial
-      tables:
-        - brnz_transactions
-        - slvr_transactions
-        - gld_daily_report
-      actions: [select, update, create, drop, alter, index, lock, all]
+      actions: [create, select, update, alter, drop, index, lock, all]
+    # Paired cm_hive + cm_ozone — see ranger_iceberg_ozone_pairs.yaml (policy_name = table_name)
+    iceberg_table_pairs:
+      - table: brnz_transactions
+        ozone_path: ofs://ozone1782570080/dev/data/brnz/transactions
+      - table: slvr_transactions
+        ozone_path: ofs://ozone1782570080/dev/data/slvr/transactions
+      - table: gld_daily_report
+        ozone_path: ofs://ozone1782570080/dev/data/gld/daily_transaction_report
     ranger_kms:
       service: cm_kms
-      key: ozone_encryption_key
-      om_service_user: [Get Metadata, Generate EEK]
-      gateway_principal: [Generate EEK, Decrypt EEK]
+      keys:
+        hdfs_encryption_key:
+          hdfs_service_user: [Get Metadata, Generate EEK]
+          gateway_principal: [Generate EEK, Decrypt EEK]
+        ozone_encryption_key:
+          om_service_user: [Get Metadata, Generate EEK]
+          gateway_principal: [Generate EEK, Decrypt EEK]
 
   uat:
     hdfs:
       - path: hdfs://ns1/uat/raw/financial/transactions
         actions: [read, write, execute]
-    ozone:
-      - path: ofs://ozone1782570080/uat/data/brnz
+    ozone_infrastructure:
+      - path: ofs://ozone1782570080/uat/data
+        resource_type: bucket
+        policy_name: uat-data-bucket
         actions: [read, write, create, delete]
-      - path: ofs://ozone1782570080/uat/data/slvr
-        actions: [read, write, create, delete]
-      - path: ofs://ozone1782570080/uat/data/gld
-        actions: [read, write, create, delete]
-    hive:
+    hive_database:
+      policy_name: sbi_financial
       database: sbi_financial
-      tables: [brnz_transactions, slvr_transactions, gld_daily_report]
-      actions: [select, update, create, drop, alter, index, lock, all]
+      actions: [create, select, update, alter, drop, index, lock, all]
+    iceberg_table_pairs:
+      - table: brnz_transactions
+        ozone_path: ofs://ozone1782570080/uat/data/brnz/transactions
+      - table: slvr_transactions
+        ozone_path: ofs://ozone1782570080/uat/data/slvr/transactions
+      - table: gld_daily_report
+        ozone_path: ofs://ozone1782570080/uat/data/gld/daily_transaction_report
 
   prod:
     hdfs:
       - path: hdfs://ns1/prod/raw/financial/transactions
         actions: [read, write, execute]
-    ozone:
-      - path: ofs://ozone1782570080/prod/data/brnz
+    ozone_infrastructure:
+      - path: ofs://ozone1782570080/prod/data
+        resource_type: bucket
+        policy_name: prod-data-bucket
         actions: [read, write, create, delete]
-      - path: ofs://ozone1782570080/prod/data/slvr
-        actions: [read, write, create, delete]
-      - path: ofs://ozone1782570080/prod/data/gld
-        actions: [read, write, create, delete]
-    hive:
+    hive_database:
+      policy_name: sbi_financial
       database: sbi_financial
-      tables: [brnz_transactions, slvr_transactions, gld_daily_report]
-      actions: [select, update, create, drop, alter, index, lock, all]
+      actions: [create, select, update, alter, drop, index, lock, all]
+    iceberg_table_pairs:
+      - table: brnz_transactions
+        ozone_path: ofs://ozone1782570080/prod/data/brnz/transactions
+      - table: slvr_transactions
+        ozone_path: ofs://ozone1782570080/prod/data/slvr/transactions
+      - table: gld_daily_report
+        ozone_path: ofs://ozone1782570080/prod/data/gld/daily_transaction_report
 
 policy_request_template:
   summary: "Grant spark-optimal {env} access for {principal}"
   checklist:
-    - "Ranger HDFS policy for raw path and Spark history dir"
-    - "Ranger Ozone policy for volume/bucket and brnz/slvr/gld prefixes"
-    - "Ranger Hive policy for sbi_financial database and Iceberg tables"
-    - "Ranger KMS policy for ozone_encryption_key (OM + systest) — Ozone TDE"
+    - "Ranger HDFS (cm_hdfs) policy for raw path and Spark history dir"
+    - "HDFS Encryption Zone on /{env}/raw/financial/transactions (hdfs_encryption_key)"
+    - "Ranger Ozone (cm_ozone) volume/bucket infrastructure policies for {env}"
+    - "Cloudera Iceberg-on-Ozone: cm_hive Storage Handler (iceberg RW Storage) + per-table SQL + URL + cm_ozone"
+    - "SBI pair per table: cm_hive SQL '{table}' + cm_ozone '{table}' — see ranger_iceberg_ozone_pairs.yaml"
+    - "Ranger KMS hdfs_encryption_key (hdfs + systest) — HDFS TDE"
+    - "Ranger KMS ozone_encryption_key (OM + systest) — Ozone TDE"
     - "Ozone bucket created with --bucketkey ozone_encryption_key"
-    - "Confirm Spark Ranger plugin policies if enabled on cluster"
-  verify: "bash scripts/security/security_check.sh"
+    - "Confirm cm_spark policies if Spark Ranger plugin enabled"
+  verify:
+    - "bash scripts/security/print_ranger_iceberg_pairs.sh"
+    - "bash scripts/security/security_check.sh"
