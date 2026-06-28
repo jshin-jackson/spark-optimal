@@ -18,6 +18,8 @@ class SecurityContext:
     hms_principal: str
 
 
+# Delegation tokens propagate Kerberos identity to Spark executors.
+# Authorization on HDFS/Ozone/Hive is still enforced by Apache Ranger (not filesystem ACLs).
 GATEWAY_SPARK_SECURITY_DEFAULTS: Dict[str, str] = {
     "spark.security.credentials.hadoopfs.enabled": "true",
     "spark.security.credentials.hive.enabled": "true",

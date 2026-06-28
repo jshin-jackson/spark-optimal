@@ -11,6 +11,25 @@ GATEWAY_SECURITY_CHECKLIST = [
     "Do not override CM-managed Java --add-opens options",
 ]
 
+# Authorization: Apache Ranger only (HDFS, HMS, Spark, Ozone). No filesystem ACL bypass.
+RANGER_AUTHORIZATION_CHECKLIST = [
+    "HDFS access is granted only via Ranger HDFS policies (not chmod/chown/setfacl)",
+    "Ozone volume/bucket/prefix access is granted only via Ranger Ozone policies",
+    "Hive/Iceberg HMS access is granted only via Ranger Hive policies",
+    "Spark jobs inherit systest identity; Ranger enforces access on executors",
+    "On Permission denied with valid klist: update Ranger — see governance/configs/security/ranger.yaml",
+    "Run scripts/security/security_check.sh before spark-submit to probe Ranger-backed paths",
+]
+
+FORBIDDEN_PERMISSION_METHODS = [
+    "chmod",
+    "chown",
+    "setfacl",
+    "hdfs dfs -chmod",
+    "hdfs dfs -chown",
+    "ozone native ACL outside Ranger",
+]
+
 REQUIRED_KERBEROS_KEYS = [
     "spark.kerberos.principal",
     "spark.kerberos.keytab",

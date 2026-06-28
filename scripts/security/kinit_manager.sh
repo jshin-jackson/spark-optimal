@@ -4,8 +4,12 @@
 # =============================================================================
 #
 # [목적]
-#   systest.keytab 으로 Kerberos 티켓을 발급합니다.
-#   Spark/HDFS/Ozone 접근 전 반드시 실행해야 합니다.
+#   systest.keytab 으로 Kerberos 티켓을 발급합니다 (인증 / authentication).
+#   Spark/HDFS/Ozone/Hive 접근 전 반드시 실행해야 합니다.
+#
+# [Ranger]
+#   kinit은 "누구인지"만 증명합니다. HDFS/HMS/Spark/Ozone 권한은 Ranger 정책으로만 부여됩니다.
+#   Permission denied 시 chmod/chown 하지 말고 Ranger 정책을 요청하세요.
 #
 # [사용법]
 #   bash scripts/security/kinit_manager.sh          # 티켓 없을 때만 kinit

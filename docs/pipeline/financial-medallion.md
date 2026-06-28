@@ -28,6 +28,11 @@ graph LR
 | Silver | `spark_catalog.sbi_financial.slvr_transactions` | `.../slvr/transactions` |
 | Gold | `spark_catalog.sbi_financial.gld_daily_report` | `.../gld/daily_transaction_report` |
 
+## Ranger (required)
+
+All HDFS, Ozone, and Hive/Iceberg access must be granted via **Apache Ranger** for `systest@...`.  
+Do not use filesystem ACLs. See [Ranger Authorization](../operations/ranger-authorization.md) and `governance/configs/security/ranger.yaml`.
+
 ## Run (Gateway Node)
 
 ### Option A: Airflow (recommended)

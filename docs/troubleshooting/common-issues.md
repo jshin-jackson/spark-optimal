@@ -1,5 +1,15 @@
 # Troubleshooting Guide
 
+## Ranger / Authorization
+
+SBI: HDFS, HMS, Spark, Ozone access is **Ranger-only**. Do not use `chmod`, `chown`, or `setfacl`.
+
+| Symptom | Fix |
+|---------|-----|
+| `Permission denied` on `hdfs dfs` (valid `klist`) | Add Ranger **HDFS** policy for `${PRINCIPAL}` on path in `governance/configs/security/ranger.yaml` |
+| Executor OFS / Iceberg write failure | Ranger **Ozone** + **Hive** policies for medallion paths and `sbi_financial` |
+| `security_check.sh` Ranger probe fails | Platform team: Ranger policy request per [ranger-authorization.md](../operations/ranger-authorization.md) |
+
 ## Kerberos / SASL
 
 | Symptom | Fix |

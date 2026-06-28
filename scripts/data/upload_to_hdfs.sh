@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Step 2: Upload generated financial JSONL files to HDFS.
+# HDFS write requires Ranger HDFS policy for ${PRINCIPAL} on ${HDFS_TARGET} — not chmod/chown.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,8 +23,15 @@ fi
 bash "${PROJECT_ROOT}/scripts/security/kinit_manager.sh"
 
 echo "Uploading ${LOCAL_DIR} -> ${HDFS_TARGET}"
-hdfs dfs -mkdir -p "${HDFS_TARGET}"
-hdfs dfs -put -f "${LOCAL_DIR}"/*.jsonl "${HDFS_TARGET}/"
+if ! hdfs dfs -mkdir -p "${HDFS_TARGET}"; then
+  echo "ERROR: HDFS mkdir failed. With valid kinit, this is usually a Ranger HDFS policy gap." >&2
+  echo "       See governance/configs/security/ranger.yaml" >&2
+  exit 1
+fi
+if ! hdfs dfs -put -f "${LOCAL_DIR}"/*.jsonl "${HDFS_TARGET}/"; then
+  echo "ERROR: HDFS put failed. Check Ranger write policy for ${HDFS_TARGET}" >&2
+  exit 1
+fi
 
 echo "Upload complete."
 hdfs dfs -du -h "${HDFS_TARGET}" | tail -5

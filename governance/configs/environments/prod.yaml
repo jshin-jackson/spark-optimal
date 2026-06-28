@@ -11,6 +11,13 @@ ozone_om_address: ccycloud-2.jshin-sbi.root.comops.site:9862,ccycloud-8.jshin-sb
 warehouse_base: ofs://ozone1782570080/prod/data
 yarn_queue_default: etl
 
+authorization:
+  model: ranger
+  principal: systest@${KRB_REALM}
+  policy_inventory: governance/configs/security/ranger.yaml
+  doc: docs/operations/ranger-authorization.md
+  forbidden: [chmod, chown, setfacl, hdfs_dfs_chmod, ozone_native_acl]
+
 cluster:
   total_vcores: 26496
   total_memory_gb: 123566

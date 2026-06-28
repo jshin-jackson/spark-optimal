@@ -2,7 +2,7 @@
 
 ## Daily Checklist
 
-1. Verify Kerberos: `bash scripts/security/security_check.sh`
+1. Verify Kerberos + Ranger path access: `bash scripts/security/security_check.sh`
 2. Review metrics: `bash scripts/monitoring/collect_metrics.sh`
 3. Check YARN queue utilization for `migration`, `etl`, `fraud` queues
 

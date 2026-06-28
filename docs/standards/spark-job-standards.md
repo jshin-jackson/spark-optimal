@@ -7,9 +7,27 @@
 
 ## Security (Gateway)
 
+### Authentication (Kerberos)
+
 1. `kinit -kt /opt/cloudera/systest.keytab systest@QE-INFRA-AD.CLOUDERA.COM`
 2. Use `scripts/submit/spark_submit.sh` — never raw spark-submit without delegation token settings
 3. Deploy mode: **cluster** from gateway
+
+### Authorization (Ranger only)
+
+HDFS, HMS, Spark, and Ozone permissions are enforced **only** by Apache Ranger.
+
+- Do **not** use `chmod`, `chown`, `setfacl`, or `hdfs dfs -chmod`
+- Policy inventory: `governance/configs/security/ranger.yaml`
+- Pre-submit check: `bash scripts/security/security_check.sh`
+
+| Resource | Ranger service | Example (prod) |
+|----------|----------------|----------------|
+| Raw JSON | HDFS | `hdfs://ns1/prod/raw/financial/transactions` |
+| Medallion | Ozone | `ofs://ozone1782570080/prod/data/{brnz,slvr,gld}` |
+| Iceberg | Hive | `sbi_financial.*` |
+
+See [Ranger Authorization](../operations/ranger-authorization.md).
 
 ## Resource Sizing
 

@@ -13,7 +13,7 @@ cfg = SBIAirflowConfig.from_airflow()
 
 with DAG(
     dag_id="sbi_security_precheck",
-    description="Kerberos kinit and delegation token readiness check",
+    description="Kerberos kinit and Ranger-backed HDFS/Ozone access check",
     schedule=None,
     start_date=datetime(2026, 1, 1),
     catchup=False,

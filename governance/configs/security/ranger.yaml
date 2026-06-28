@@ -1,0 +1,104 @@
+# Apache Ranger authorization inventory for spark-optimal
+#
+# SBI policy: HDFS, HMS (Hive), Spark, and Ozone access is enforced ONLY by Ranger.
+# Do NOT use chmod, chown, setfacl, hdfs dfs -chmod, or Ozone native ACLs for access control.
+#
+# Gateway principal (authentication): systest@<KRB_REALM> via systest.keytab
+# Authorization: Ranger policies must grant this principal the actions below.
+
+principal: systest@${KRB_REALM}
+principal_note: "Set KRB_REALM in config/env.conf; default QE-INFRA-AD.CLOUDERA.COM"
+
+services:
+  hdfs:
+    plugin: ranger-hdfs-plugin
+    description: Raw ingest paths, Spark event logs, delegation token filesystem access
+  hive:
+    plugin: ranger-hive-plugin
+    description: HMS metadata — database, table, column privileges for Iceberg catalog
+  ozone:
+    plugin: ranger-ozone-plugin
+    description: Medallion volume/bucket/prefix read-write for Bronze/Silver/Gold
+  spark:
+    plugin: ranger-spark-plugin
+    description: Spark SQL / job access where Spark Ranger plugin is enabled (align with Hive/HDFS)
+
+forbidden:
+  - hdfs dfs -chmod
+  - hdfs dfs -chown
+  - setfacl
+  - ozone native ACL outside Ranger
+  - sudo-based filesystem permission changes
+
+# Per-environment Ranger resource patterns (policy names are site-specific — fill in policy_id)
+environments:
+  dev:
+    hdfs:
+      - path: hdfs://ns1/dev/raw/financial/transactions
+        actions: [read, write, execute]
+      - path: hdfs://ns1/dev/raw/financial
+        actions: [read, write, execute]
+      - path: hdfs:///user/spark/applicationHistory
+        actions: [read, write, execute]
+        note: Spark history (conf/*/spark-defaults.conf)
+    ozone:
+      - path: ofs://ozone1782570080/dev
+        resource_type: volume
+        actions: [read, write, create]
+      - path: ofs://ozone1782570080/dev/data
+        resource_type: bucket
+        actions: [read, write, create, delete]
+      - path: ofs://ozone1782570080/dev/data/brnz
+        actions: [read, write, create, delete]
+      - path: ofs://ozone1782570080/dev/data/slvr
+        actions: [read, write, create, delete]
+      - path: ofs://ozone1782570080/dev/data/gld
+        actions: [read, write, create, delete]
+    hive:
+      database: sbi_financial
+      tables:
+        - brnz_transactions
+        - slvr_transactions
+        - gld_daily_report
+      actions: [select, update, create, drop, alter, index, lock, all]
+
+  uat:
+    hdfs:
+      - path: hdfs://ns1/uat/raw/financial/transactions
+        actions: [read, write, execute]
+    ozone:
+      - path: ofs://ozone1782570080/uat/data/brnz
+        actions: [read, write, create, delete]
+      - path: ofs://ozone1782570080/uat/data/slvr
+        actions: [read, write, create, delete]
+      - path: ofs://ozone1782570080/uat/data/gld
+        actions: [read, write, create, delete]
+    hive:
+      database: sbi_financial
+      tables: [brnz_transactions, slvr_transactions, gld_daily_report]
+      actions: [select, update, create, drop, alter, index, lock, all]
+
+  prod:
+    hdfs:
+      - path: hdfs://ns1/prod/raw/financial/transactions
+        actions: [read, write, execute]
+    ozone:
+      - path: ofs://ozone1782570080/prod/data/brnz
+        actions: [read, write, create, delete]
+      - path: ofs://ozone1782570080/prod/data/slvr
+        actions: [read, write, create, delete]
+      - path: ofs://ozone1782570080/prod/data/gld
+        actions: [read, write, create, delete]
+    hive:
+      database: sbi_financial
+      tables: [brnz_transactions, slvr_transactions, gld_daily_report]
+      actions: [select, update, create, drop, alter, index, lock, all]
+
+policy_request_template:
+  summary: "Grant spark-optimal {env} access for {principal}"
+  checklist:
+    - "Ranger HDFS policy for raw path and Spark history dir"
+    - "Ranger Ozone policy for volume/bucket and brnz/slvr/gld prefixes"
+    - "Ranger Hive policy for sbi_financial database and Iceberg tables"
+    - "Confirm Spark Ranger plugin policies if enabled on cluster"
+  verify: "bash scripts/security/security_check.sh"
