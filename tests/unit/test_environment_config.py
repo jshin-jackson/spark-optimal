@@ -20,7 +20,7 @@ def test_prod_cluster_from_yaml():
 
 def test_dev_medallion_paths_in_environment_yaml():
     env_cfg = load_environment_config("dev")
-    assert env_cfg["medallion"]["hdfs_raw_path"].endswith("/dev/raw/financial/transactions")
+    assert env_cfg["medallion"]["hdfs_raw_path"].endswith("/dev/data/brnz/transactions")
 
 
 def test_missing_cluster_raises(monkeypatch):

@@ -34,7 +34,7 @@ OZONE_ENCRYPTION_CHECKLIST = [
 
 HDFS_ENCRYPTION_CHECKLIST = [
     "All HDFS raw ingest data uses Ranger KMS key hdfs_encryption_key (Encryption Zone)",
-    "Create zone with: hdfs crypto -createZone -keyName hdfs_encryption_key -path /{env}/raw/financial/transactions",
+    "Create zone with: hdfs crypto -createZone -keyName hdfs_encryption_key -path /{env}/data/brnz/transactions",
     "Ranger KMS: hdfs (NameNode) service user needs Get Metadata + Generate EEK on hdfs_encryption_key",
     "Ranger KMS: systest needs Generate EEK + Decrypt EEK on hdfs_encryption_key",
     "Encryption Zone requires an empty directory — run setup before first upload",

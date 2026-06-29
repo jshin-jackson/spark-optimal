@@ -62,7 +62,7 @@ class SBIAirflowConfig:
         env_cfg = _load_environment_yaml(home, sbi_env)
         medallion = env_cfg.get("medallion", {})
         hdfs_uri = _variable("hdfs_uri", env_cfg.get("hdfs_uri", "hdfs://ns1"))
-        default_hdfs_raw = medallion.get("hdfs_raw_path", f"{hdfs_uri}/{sbi_env}/raw/financial/transactions")
+        default_hdfs_raw = medallion.get("hdfs_raw_path", f"{hdfs_uri}/{sbi_env}/data/brnz/transactions")
         return cls(
             project_home=home,
             sbi_env=sbi_env,

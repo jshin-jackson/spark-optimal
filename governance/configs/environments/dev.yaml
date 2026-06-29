@@ -64,7 +64,7 @@ resource_limits:
   shuffle_partitions: 32
 
 medallion:
-  hdfs_raw_path: hdfs://ns1/dev/raw/financial/transactions
+  hdfs_raw_path: hdfs://ns1/dev/data/brnz/transactions
   brnz_base: ofs://ozone1782570080/dev/data/brnz
   slvr_base: ofs://ozone1782570080/dev/data/slvr
   gld_base: ofs://ozone1782570080/dev/data/gld

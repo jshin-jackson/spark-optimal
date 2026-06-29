@@ -3,7 +3,7 @@
   "sbi_env": "prod",
   "financial_target_gb": "10",
   "hdfs_uri": "hdfs://ns1",
-  "hdfs_financial_raw": "hdfs://ns1/prod/raw/financial/transactions",
+  "hdfs_financial_raw": "hdfs://ns1/prod/data/brnz/transactions",
   "financial_local_output": "/opt/spark-optimal/data/output/financial",
   "schedule_financial_medallion": "0 2 * * *",
   "schedule_iceberg_maintenance": "0 3 * * 0",

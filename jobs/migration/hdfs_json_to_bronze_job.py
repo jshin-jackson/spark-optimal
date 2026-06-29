@@ -16,7 +16,7 @@ Step 3: HDFS Raw JSON → Ozone Bronze Iceberg 테이블
   bash scripts/submit/spark_submit.sh migration \
     --py-file jobs/migration/hdfs_json_to_bronze_job.py \
     --project sbi_financial --job hdfs_json_to_bronze \
-    --source-path hdfs://ns1/prod/raw/financial/transactions \
+    --source-path hdfs://ns1/prod/data/brnz/transactions \
     --data-size-gb 10
 """
 

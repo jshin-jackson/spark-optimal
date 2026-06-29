@@ -18,7 +18,7 @@ fi
 ENV_NAME="${SBI_ENV:-dev}"
 KEY="${HDFS_ENCRYPTION_KEY:-hdfs_encryption_key}"
 KMS_SERVICE="${RANGER_KMS_SERVICE:-cm_kms}"
-HDFS_RAW_URI="${HDFS_FINANCIAL_RAW:-hdfs://ns1/${ENV_NAME}/raw/financial/transactions}"
+HDFS_RAW_URI="${HDFS_FINANCIAL_RAW:-hdfs://ns1/${ENV_NAME}/data/brnz/transactions}"
 SPARK_HISTORY_URI="${HDFS_SPARK_HISTORY:-hdfs:///user/spark/applicationHistory}"
 SETUP_SPARK_HISTORY="${SETUP_HDFS_SPARK_HISTORY:-1}"
 

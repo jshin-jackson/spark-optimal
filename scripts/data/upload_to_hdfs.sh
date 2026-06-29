@@ -14,7 +14,7 @@ if [[ -f "${PROJECT_ROOT}/config/env.conf" ]]; then
 fi
 
 LOCAL_DIR="${1:-${PROJECT_ROOT}/data/output/financial}"
-HDFS_TARGET="${2:-${HDFS_FINANCIAL_RAW:-${HDFS_URI}/${SBI_ENV:-dev}/raw/financial/transactions}}"
+HDFS_TARGET="${2:-${HDFS_FINANCIAL_RAW:-${HDFS_URI}/${SBI_ENV:-dev}/data/brnz/transactions}}"
 
 if [[ ! -d "${LOCAL_DIR}" ]]; then
   echo "ERROR: local directory not found: ${LOCAL_DIR}" >&2

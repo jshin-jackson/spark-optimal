@@ -20,7 +20,7 @@ def test_bash_prefix_includes_env(monkeypatch):
         sbi_env="prod",
         target_gb=10.0,
         local_output="/opt/spark-optimal/data/output/financial",
-        hdfs_raw="hdfs://ns1/prod/raw/financial/transactions",
+        hdfs_raw="hdfs://ns1/prod/data/brnz/transactions",
         schedule_financial="0 2 * * *",
         schedule_maintenance="0 3 * * 0",
         email_on_failure=None,
