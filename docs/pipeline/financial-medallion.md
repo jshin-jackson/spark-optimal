@@ -28,17 +28,17 @@ graph LR
 | Silver | `spark_catalog.sbi_financial.slvr_transactions` | `.../slvr/transactions` |
 | Gold | `spark_catalog.sbi_financial.gld_daily_report` | `.../gld/daily_transaction_report` |
 
-## Ranger paired policies (Cloudera CDP 7.3.1)
+## Ranger paired policies (Cloudera CDP 7.3.1 + SBI naming)
 
 Each Iceberg table on Ozone needs **Hadoop SQL (`cm_hive`) + `cm_ozone`** policies per [Cloudera docs](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html):
 
-| Table | cm_hive SQL | cm_hive URL | cm_ozone |
-|-------|-------------|-------------|----------|
-| `brnz_transactions` | `brnz_transactions` | `brnz_transactions-url` | `brnz_transactions` |
-| `slvr_transactions` | `slvr_transactions` | `slvr_transactions-url` | `slvr_transactions` |
-| `gld_daily_report` | `gld_daily_report` | `gld_daily_report-url` | `gld_daily_report` |
+| Table | cm_hive SQL | cm_hive URL | cm_ozone key |
+|-------|-------------|-------------|--------------|
+| `brnz_transactions` | `dev_brnz_transactions_db_plcy` | `dev_brnz_transactions_uri_plcy` | `dev_data_brnz_key_plcy` |
+| `slvr_transactions` | `dev_slvr_transactions_db_plcy` | `dev_slvr_transactions_uri_plcy` | `dev_data_slvr_key_plcy` |
+| `gld_daily_report` | `dev_gld_daily_report_db_plcy` | `dev_gld_daily_report_uri_plcy` | `dev_data_gld_key_plcy` |
 
-Plus cluster **Storage Handler** (iceberg, RW Storage). See [Ranger Iceberg–Ozone Pairs](../operations/ranger-iceberg-ozone-pairs.md).
+Infrastructure: `dev_volume_plcy`, `dev_data_bucket_plcy`. Plus cluster **Storage Handler** (iceberg, RW Storage). See [Ranger Iceberg–Ozone Pairs](../operations/ranger-iceberg-ozone-pairs.md).
 
 ```bash
 bash scripts/security/print_ranger_iceberg_pairs.sh

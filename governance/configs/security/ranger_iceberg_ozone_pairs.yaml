@@ -1,4 +1,4 @@
-# Ranger policies for Iceberg tables on Ozone (CDP 7.3.1 — Cloudera-aligned)
+# Ranger policies for Iceberg tables on Ozone (CDP 7.3.1 — Cloudera + SBI naming)
 #
 # Cloudera requires MULTIPLE Ranger policies for Iceberg on Ozone:
 #   1. Hadoop SQL Storage Handler — storage-type iceberg, RW Storage (CREATE/ALTER location)
@@ -8,14 +8,36 @@
 #
 # In Ranger UI the Hadoop SQL service is named cm_hive (Hive, Impala, Hue, Spark SQL).
 #
-# SBI naming (where policy names must be unique within a service):
-#   cm_hive SQL table policy  → {table_name}           (e.g. brnz_transactions)
-#   cm_hive URL policy        → {table_name}-url
-#   cm_hive Storage Handler   → cluster shared OR {table_name}-storage
-#   cm_ozone policy           → {table_name}           (paired with SQL table policy)
+# SBI naming (production DLH pattern — policy names unique within each service):
+#   cm_hive SQL table  → {env}_{table}_db_plcy     (e.g. dev_brnz_transactions_db_plcy)
+#   cm_hive URL        → {env}_{table}_uri_plcy    (e.g. dev_brnz_transactions_uri_plcy)
+#   cm_ozone volume    → {env}_volume_plcy         (e.g. dev_volume_plcy, prod_volume_plcy)
+#   cm_ozone bucket    → {env}_data_bucket_plcy    (e.g. dev_data_bucket_plcy)
+#   cm_ozone key/layer → {env}_data_{layer}_key_plcy (e.g. dev_data_brnz_key_plcy)
+#
+# SBI triple per table: cm_hive _db_plcy + _uri_plcy + cm_ozone _data_{layer}_key_plcy
 
 enabled: true
 principal: systest@${KRB_REALM}
+
+naming_convention:
+  source: "SBI DLH production Ranger (cm_hive + cm_ozone)"
+  cm_hive:
+    sql_table: "{env}_{table}_db_plcy"
+    url: "{env}_{table}_uri_plcy"
+    storage_handler: "all - storage-type, storage-url"
+  cm_ozone:
+    volume: "{env}_volume_plcy"
+    bucket: "{env}_data_bucket_plcy"
+    key_by_layer: "{env}_data_{layer}_key_plcy"
+  roles:
+    admin: SBI_ETLAdmin_Role
+    rw: SBI_ETLUsers_RW_Role
+    ro: SBI_ETLTester_RO_Role
+  dev_gateway_user: systest
+  prod_example:
+    hive: "prd_gld_bidetl_db_plcy / prd_gld_bidetl_uri_plcy"
+    ozone: "prod_volume_plcy / prod_data_bucket_plcy / prod_data_brnz_key_plcy"
 
 cloudera_documentation:
   ranger_intro:
@@ -56,6 +78,7 @@ cluster_policies:
     include: true
     permissions: [RW Storage]
     principals: ["systest@${KRB_REALM}"]
+    roles: [SBI_ETLUsers_RW_Role]
     cloudera_doc: storage_handler
 
   # Optional: edit default Hadoop SQL all - url for broad Ozone access (Cloudera ozone doc)
@@ -66,32 +89,35 @@ cluster_policies:
     policy_name: all-url
     edit_default: true
     optional: true
-    note: "Cloudera preloads hive/impala/hue/admin on all Ozone URLs; add systest or use per-table URL"
+    note: "Cloudera preloads hive/impala/hue/admin on all Ozone URLs; add systest or use per-table _uri_plcy"
 
-# Database-level SQL policy (supplement — does not replace per-table policies)
+# Database-level SQL policy (optional supplement — SBI prod uses per-table _db_plcy)
 database_policy:
   ranger_service: cm_hive
   policy_type: sql_table
-  policy_name: sbi_financial
+  policy_name: "{env}_sbi_financial_db_plcy"
   database: sbi_financial
   table: "*"
   columns: "*"
   permissions: [create, select, update, alter, drop, index, lock, all]
+  optional: true
 
-# cm_ozone infrastructure — volume/bucket creation (separate from per-table key policies)
+# cm_ozone infrastructure — volume/bucket creation (separate from per-layer key policies)
 infrastructure_ozone:
   ranger_service: cm_ozone
   edit_default_policy: "all - volume, bucket, key"
   policies:
-    - policy_name: "{env}-volume"
+    - policy_name: "{env}_volume_plcy"
       volume: "{env}"
       resource_type: volume
       permissions: [read, write, create]
-    - policy_name: "{env}-data-bucket"
+      roles: [SBI_ETLAdmin_Role, SBI_ETLUsers_RW_Role]
+    - policy_name: "{env}_data_bucket_plcy"
       volume: "{env}"
       bucket: data
       resource_type: bucket
       permissions: [read, write, create, delete]
+      roles: [SBI_ETLAdmin_Role, SBI_ETLUsers_RW_Role]
 
 # Per-table policy set — register ALL rows for each Iceberg table on Ozone
 tables:
@@ -103,15 +129,17 @@ tables:
     ozone_key: brnz/transactions
     hadoop_sql:
       sql_table:
-        policy_name: brnz_transactions
+        policy_name: "{env}_brnz_transactions_db_plcy"
         database: sbi_financial
         table: brnz_transactions
         columns: "*"
         permissions: [select, update, create, drop, alter, index, lock, all]
+        roles: [SBI_ETLUsers_RW_Role]
       url:
-        policy_name: brnz_transactions-url
+        policy_name: "{env}_brnz_transactions_uri_plcy"
         url_pattern: "ofs://ozone1782570080/{env}/data/brnz/transactions"
         permissions: [read, write]
+        roles: [SBI_ETLUsers_RW_Role]
       storage_handler:
         optional_per_table: true
         policy_name: brnz_transactions-storage
@@ -120,11 +148,12 @@ tables:
         permissions: [RW Storage]
         note: "Skip if cluster storage_handler with storage_url * covers systest"
     ozone:
-      policy_name: brnz_transactions
+      policy_name: "{env}_data_brnz_key_plcy"
       volume: "{env}"
       bucket: data
       key: brnz/transactions
       permissions: [read, write, create, delete]
+      roles: [SBI_ETLUsers_RW_Role, SBI_ETLAdmin_Role]
     engines: [Spark, Hive, Impala]
 
   - layer: silver
@@ -135,15 +164,17 @@ tables:
     ozone_key: slvr/transactions
     hadoop_sql:
       sql_table:
-        policy_name: slvr_transactions
+        policy_name: "{env}_slvr_transactions_db_plcy"
         database: sbi_financial
         table: slvr_transactions
         columns: "*"
         permissions: [select, update, create, drop, alter, index, lock, all]
+        roles: [SBI_ETLUsers_RW_Role]
       url:
-        policy_name: slvr_transactions-url
+        policy_name: "{env}_slvr_transactions_uri_plcy"
         url_pattern: "ofs://ozone1782570080/{env}/data/slvr/transactions"
         permissions: [read, write]
+        roles: [SBI_ETLUsers_RW_Role]
       storage_handler:
         optional_per_table: true
         policy_name: slvr_transactions-storage
@@ -151,11 +182,12 @@ tables:
         storage_url: "sbi_financial/slvr_transactions"
         permissions: [RW Storage]
     ozone:
-      policy_name: slvr_transactions
+      policy_name: "{env}_data_slvr_key_plcy"
       volume: "{env}"
       bucket: data
       key: slvr/transactions
       permissions: [read, write, create, delete]
+      roles: [SBI_ETLUsers_RW_Role, SBI_ETLAdmin_Role]
     engines: [Spark, Hive, Impala]
 
   - layer: gold
@@ -166,15 +198,17 @@ tables:
     ozone_key: gld/daily_transaction_report
     hadoop_sql:
       sql_table:
-        policy_name: gld_daily_report
+        policy_name: "{env}_gld_daily_report_db_plcy"
         database: sbi_financial
         table: gld_daily_report
         columns: "*"
         permissions: [select, update, create, drop, alter, index, lock, all]
+        roles: [SBI_ETLUsers_RW_Role]
       url:
-        policy_name: gld_daily_report-url
+        policy_name: "{env}_gld_daily_report_uri_plcy"
         url_pattern: "ofs://ozone1782570080/{env}/data/gld/daily_transaction_report"
         permissions: [read, write]
+        roles: [SBI_ETLUsers_RW_Role]
       storage_handler:
         optional_per_table: true
         policy_name: gld_daily_report-storage
@@ -182,11 +216,12 @@ tables:
         storage_url: "sbi_financial/gld_daily_report"
         permissions: [RW Storage]
     ozone:
-      policy_name: gld_daily_report
+      policy_name: "{env}_data_gld_key_plcy"
       volume: "{env}"
       bucket: data
       key: gld/daily_transaction_report
       permissions: [read, write, create, delete]
+      roles: [SBI_ETLUsers_RW_Role, SBI_ETLAdmin_Role]
     engines: [Spark, Hive, Impala]
 
 setup:
@@ -194,10 +229,10 @@ setup:
   print_script: scripts/security/print_ranger_iceberg_pairs.sh
 
 policy_request_template:
-  summary: "Cloudera Iceberg-on-Ozone Ranger policies for table {table_name} ({env})"
+  summary: "SBI Iceberg-on-Ozone Ranger policies for table {table_name} ({env})"
   checklist:
-    - "cm_hive Storage Handler — iceberg + RW Storage (cluster default or {table_name}-storage)"
-    - "cm_hive SQL table policy '{table_name}' — sbi_financial.{table_name}, columns *"
-    - "cm_hive URL policy '{table_name}-url' — {ozone_url} Read+Write"
-    - "cm_ozone policy '{table_name}' — volume/bucket/key for table data path"
-    - "SBI pair: cm_hive SQL '{table_name}' + cm_ozone '{table_name}' must both include systest"
+    - "cm_hive Storage Handler — iceberg + RW Storage (cluster default)"
+    - "cm_hive {env}_{table}_db_plcy — sbi_financial.{table_name}, columns *"
+    - "cm_hive {env}_{table}_uri_plcy — {ozone_url} Read+Write"
+    - "cm_ozone {env}_data_{layer}_key_plcy — volume/bucket/key for table data path"
+    - "SBI triple: _db_plcy + _uri_plcy + _data_{layer}_key_plcy must include systest (DEV) or SBI_ETLUsers_RW_Role (PROD)"

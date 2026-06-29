@@ -164,8 +164,8 @@ _check_ranger_path "Ozone Bronze table data (Ranger cm_ozone)" "${OZONE_MEDALLIO
 
 echo
 echo "=== Iceberg on Ozone — Ranger policies (Cloudera CDP 7.3.1) ==="
-echo "Per table: cm_hive Storage Handler + SQL {table} + URL {table}-url + cm_ozone {table}"
-echo "SBI pair: cm_hive SQL + cm_ozone share the same policy name (= table name)"
+echo "Per table: cm_hive Storage Handler + {env}_{table}_db_plcy + _uri_plcy + cm_ozone {env}_data_{layer}_key_plcy"
+echo "SBI triple: cm_hive {env}_{table}_db_plcy + {env}_{table}_uri_plcy + cm_ozone {env}_data_{layer}_key_plcy"
 echo "Inventory: governance/configs/security/ranger_iceberg_ozone_pairs.yaml"
 echo "Print:     bash scripts/security/print_ranger_iceberg_pairs.sh"
 echo "Guide:     ${RANGER_PAIRS_DOC}"

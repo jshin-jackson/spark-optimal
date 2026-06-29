@@ -58,11 +58,13 @@ Each Iceberg table on Ozone requires policies documented in [Ranger Iceberg–Oz
 | # | Service | Type | SBI policy name | Cloudera reference |
 |---|---------|------|-----------------|-------------------|
 | 1 | **cm_hive** (Hadoop SQL) | Storage Handler | edit `all - storage-type, storage-url` | [setup-ranger](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/spark-iceberg/topics/iceberg-setup-ranger.html) |
-| 2 | **cm_hive** | SQL table | **`{table}`** | [database-access](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-setup-ranger-database-access.html) |
-| 3 | **cm_hive** | URL (`ofs://…`) | **`{table}-url`** | [ozone-policy](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html) |
-| 4 | **cm_ozone** | volume/bucket/key | **`{table}`** | [ozone-policy](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html) |
+| 2 | **cm_hive** | SQL table | **`{env}_{table}_db_plcy`** | [database-access](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-setup-ranger-database-access.html) |
+| 3 | **cm_hive** | URL (`ofs://…`) | **`{env}_{table}_uri_plcy`** | [ozone-policy](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html) |
+| 4 | **cm_ozone** | volume/bucket/key | **`{env}_data_{layer}_key_plcy`** | [ozone-policy](https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html) |
 
-**SBI pair:** cm_hive SQL **`aaa`** + cm_ozone **`aaa`**. RW Storage alone does not grant data access.
+**SBI triple:** cm_hive **`dev_brnz_transactions_db_plcy`** + **`dev_brnz_transactions_uri_plcy`** + cm_ozone **`dev_data_brnz_key_plcy`**. RW Storage alone does not grant data access.
+
+**Infrastructure (cm_ozone):** **`{env}_volume_plcy`**, **`{env}_data_bucket_plcy`** — volume/bucket creation; separate from per-layer key policies.
 
 Print full checklist:
 
@@ -70,11 +72,9 @@ Print full checklist:
 bash scripts/security/print_ranger_iceberg_pairs.sh
 ```
 
-**Infrastructure (cm_ozone):** volume `{env}`, bucket `{env}/data` — for bucket creation; does not replace per-table policies.
-
 ### Hive / HMS
 
-Database policy **`sbi_financial`** on **cm_hive** supplements but does **not** replace per-table SQL + URL + cm_ozone policies above.
+Optional database policy **`{env}_sbi_financial_db_plcy`** on **cm_hive** supplements but does **not** replace per-table `_db_plcy` + `_uri_plcy` + cm_ozone `_key_plcy` policies above.
 
 ### Spark / Hive / Impala
 
@@ -129,7 +129,7 @@ Failures with an valid ticket → request Ranger policy update using `governance
 | Symptom | Likely cause | Action |
 |---------|--------------|--------|
 | `Permission denied` / `AccessControlException` on `hdfs dfs` | Ranger HDFS policy missing | Add policy for `${PRINCIPAL}` on path in `ranger.yaml` |
-| Executor cannot read/write OFS | **cm_ozone** paired policy missing for table | Add cm_ozone policy named = table on OFS path |
+| Executor cannot read/write OFS | **cm_ozone** key policy missing | Add `{env}_data_{layer}_key_plcy` + cm_hive `_uri_plcy` |
 | `CREATE TABLE` / HMS / Iceberg failure | **cm_hive** paired policy missing | Add cm_hive policy named = table on `sbi_financial.<table>` |
 | Hive/Impala OK on one table, not another | Incomplete paired set | Register both cm_hive + cm_ozone for **each** table |
 | `GSS initiate failed` | Kerberos (not Ranger) | `kinit_manager.sh` |

@@ -14,9 +14,9 @@ GATEWAY_SECURITY_CHECKLIST = [
 # Authorization: Apache Ranger only (HDFS, HMS, Spark, Ozone). No filesystem ACL bypass.
 RANGER_AUTHORIZATION_CHECKLIST = [
     "HDFS access is granted only via Ranger cm_hdfs policies (not chmod/chown/setfacl)",
-    "Iceberg on Ozone (Cloudera CDP 7.3.1): cm_hive Storage Handler (iceberg, RW Storage) + SQL table + URL + cm_ozone per table",
-    "SBI pair: cm_hive SQL policy {table} + cm_ozone policy {table} — same name as Iceberg table",
-    "Also required: cm_hive URL policy {table}-url for ofs:// table location (Cloudera ozone-policy doc)",
+    "Iceberg on Ozone (Cloudera CDP 7.3.1): cm_hive Storage Handler (iceberg, RW Storage) + _db_plcy + _uri_plcy + cm_ozone _key_plcy per table",
+    "SBI naming: cm_hive {env}_{table}_db_plcy + {env}_{table}_uri_plcy + cm_ozone {env}_data_{layer}_key_plcy",
+    "Infrastructure: cm_ozone {env}_volume_plcy + {env}_data_bucket_plcy (volume/bucket CREATE)",
     "RW Storage does NOT grant data access — SQL + URL + cm_ozone policies are still required",
     "systest must hold all policies to run Spark, Hive, and Impala without authz gaps",
     "Run scripts/security/print_ranger_iceberg_pairs.sh — see docs/operations/ranger-iceberg-ozone-pairs.md",

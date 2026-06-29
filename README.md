@@ -301,9 +301,9 @@ HDFS / HMS / Spark / Ozone **권한은 Ranger 정책으로만** 부여합니다.
 | 0 | Cloudera Manager | Ozone **`ranger_service`** 활성화 |
 | 1 | **Ranger KMS** (`cm_kms`) | **`hdfs_encryption_key`**, **`ozone_encryption_key`** + ACL |
 | 2 | **cm_hdfs** | HDFS raw 경로 + Spark event log |
-| 3 | **cm_ozone** | `dev-volume`, `dev-data-bucket` (volume/bucket **생성** 권한) |
+| 3 | **cm_ozone** | `dev_volume_plcy`, `dev_data_bucket_plcy` (volume/bucket **생성**) |
 | 4 | **cm_hive** | Storage Handler (iceberg, RW Storage) + (선택) DB 정책 |
-| 5 | **cm_hive** + **cm_ozone** | 테이블당 SQL + URL + Ozone 정책 (×3) |
+| 5 | **cm_hive** + **cm_ozone** | 테이블당 `_db_plcy` + `_uri_plcy` + `_data_{layer}_key_plcy` (×3) |
 | 6 | Gateway | `security_check.sh` → HDFS EZ → Ozone bucket → 파이프라인 |
 
 Gateway에서 등록할 정책 전체 목록:
@@ -432,9 +432,9 @@ SBI 프로젝트의 **대표 예제**: SDV 가짜 금융 JSON 10GB → HDFS → 
 | 0 | Cloudera Manager | Ozone **`ranger_service`** 활성화 | — |
 | 1 | **Ranger KMS** (`cm_kms`) | **`hdfs_encryption_key`**, **`ozone_encryption_key`** + ACL | `hadoop key list` |
 | 2 | **cm_hdfs** | HDFS raw + Spark event log | `security_check.sh` |
-| 3 | **cm_ozone** | `dev-volume`, `dev-data-bucket` | `ozone sh volume create dev` |
+| 3 | **cm_ozone** | `dev_volume_plcy`, `dev_data_bucket_plcy` | `ozone sh volume create dev` |
 | 4 | **cm_hive** | Storage Handler + (선택) DB 정책 | — |
-| 5 | **cm_hive** + **cm_ozone** | 테이블당 SQL + URL + Ozone (×3) | `print_ranger_iceberg_pairs.sh` |
+| 5 | **cm_hive** + **cm_ozone** | 테이블당 `_db_plcy` + `_uri_plcy` + `_key_plcy` (×3) | `print_ranger_iceberg_pairs.sh` |
 | 6 | Gateway | kinit + security_check | — |
 | 7 | Gateway | HDFS EZ + Ozone encrypted bucket | `setup_*` 스크립트 |
 | 8 | Gateway | 파이프라인 | `run_financial_pipeline.sh` |
@@ -511,7 +511,7 @@ Ranger Admin → 상단 **Service Manager** → **`cm_hdfs`** 선택 → **Add N
 | Resource: Path | `hdfs://ns1/dev/raw/financial/transactions` |
 | Recursive | **ON** |
 | Permissions | Read, Write, Execute |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role` |
 | Policy Enabled | **ON** |
 
 **정책 B — Spark event log (선택, 권장)**
@@ -522,9 +522,28 @@ Ranger Admin → 상단 **Service Manager** → **`cm_hdfs`** 선택 → **Add N
 | Resource: Path | `hdfs:///user/spark/applicationHistory` |
 | Recursive | **ON** |
 | Permissions | Read, Write, Execute |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role` |
 
 **Add** 클릭 후 정책이 **Enabled** 상태인지 확인 (수 초~1분 후 Gateway에 반영).
+
+---
+
+#### SBI 정책 명명 규칙 (cm_hive · cm_ozone)
+
+SBI DLH 운영 클러스터와 동일한 패턴을 사용합니다.
+
+| 서비스 | 유형 | 패턴 | DEV 예시 | PROD 예시 |
+|--------|------|------|----------|-----------|
+| **cm_hive** | SQL table | `{env}_{table}_db_plcy` | `dev_brnz_transactions_db_plcy` | `prd_gld_bidetl_db_plcy` |
+| **cm_hive** | URL | `{env}_{table}_uri_plcy` | `dev_brnz_transactions_uri_plcy` | `prd_gld_bidetl_uri_plcy` |
+| **cm_ozone** | volume | `{env}_volume_plcy` | `dev_volume_plcy` | `prod_volume_plcy` |
+| **cm_ozone** | bucket | `{env}_data_bucket_plcy` | `dev_data_bucket_plcy` | `prod_data_bucket_plcy` |
+| **cm_ozone** | key/layer | `{env}_data_{layer}_key_plcy` | `dev_data_brnz_key_plcy` | `prod_data_brnz_key_plcy` |
+
+**테이블당 SBI triple:** `_db_plcy` + `_uri_plcy` + `_data_{layer}_key_plcy`
+
+**Role (PROD):** `SBI_ETLAdmin_Role`, `SBI_ETLUsers_RW_Role`, `SBI_ETLTester_RO_Role`  
+**DEV Gateway:** User 필드에 `systest` 직접 추가 (또는 `SBI_ETLUsers_RW_Role` 부여)
 
 ---
 
@@ -539,23 +558,23 @@ Ranger Admin → **Service Manager** → **`cm_ozone`** → **Add New Policy**
 
 | 필드 | 값 |
 |------|-----|
-| Policy Name | **`dev-volume`** |
+| Policy Name | **`dev_volume_plcy`** |
 | volume | `dev` |
 | bucket | `*` |
 | key | `*` |
 | Permissions | **Read, Write, Create** |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role` |
 
 **정책 B — bucket 생성**
 
 | 필드 | 값 |
 |------|-----|
-| Policy Name | **`dev-data-bucket`** |
+| Policy Name | **`dev_data_bucket_plcy`** |
 | volume | `dev` |
 | bucket | **`data`** |
 | key | `*` |
 | Permissions | **Read, Write, Create, Delete** |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role` |
 
 Gateway 확인:
 
@@ -564,7 +583,7 @@ ozone sh volume create dev          # 이미 있으면 skip
 ozone sh bucket create -k ozone_encryption_key dev/data
 ```
 
-> **`PERMISSION_DENIED ... CREATE permission ... volume Volume:dev`** → `dev-volume` 정책 미등록. 위 정책 A를 추가하세요.
+> **`PERMISSION_DENIED ... CREATE permission ... volume Volume:dev`** → `dev_volume_plcy` 정책 미등록. 위 정책 A를 추가하세요.
 
 ---
 
@@ -581,7 +600,7 @@ Ranger → **`cm_hive`** → 기본 정책 **`all - storage-type, storage-url`**
 | storage-type | `iceberg` |
 | storage-url | `*` (Include) |
 | Permissions | **RW Storage** |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role` |
 
 > RW Storage는 CREATE/ALTER **location** 만 허용합니다. 테이블 **데이터** 접근은 5단계 SQL + URL + cm_ozone 정책이 필요합니다.
 
@@ -591,64 +610,64 @@ Ranger → **`cm_hive`** → **Add New Policy**
 
 | 필드 | 값 |
 |------|-----|
-| Policy Name | `sbi_financial` |
+| Policy Name | `dev_sbi_financial_db_plcy` |
 | database | `sbi_financial` |
 | table | `*` |
 | column | `*` |
 | Permissions | Create, Select, Update, Alter, Drop, Index, Lock, All |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role` |
 
 ---
 
 #### 5. 테이블별 Iceberg-on-Ozone 정책 (×3)
 
 Medallion 테이블마다 **cm_hive 2개 + cm_ozone 1개** (Storage Handler는 4-a에서 1회)를 등록합니다.  
-**SBI pair:** cm_hive SQL **`{table}`** + cm_ozone **`{table}`** (같은 이름).
+**SBI triple:** `_db_plcy` + `_uri_plcy` + `_data_{layer}_key_plcy`
 
-| 테이블 | cm_hive SQL | cm_hive URL | cm_ozone | Ozone 경로 |
-|--------|-------------|-------------|----------|------------|
-| `brnz_transactions` | `brnz_transactions` | `brnz_transactions-url` | `brnz_transactions` | `ofs://ozone1782570080/dev/data/brnz/transactions` |
-| `slvr_transactions` | `slvr_transactions` | `slvr_transactions-url` | `slvr_transactions` | `ofs://ozone1782570080/dev/data/slvr/transactions` |
-| `gld_daily_report` | `gld_daily_report` | `gld_daily_report-url` | `gld_daily_report` | `ofs://ozone1782570080/dev/data/gld/daily_transaction_report` |
+| 테이블 | cm_hive SQL | cm_hive URL | cm_ozone key | Ozone 경로 |
+|--------|-------------|-------------|--------------|------------|
+| `brnz_transactions` | `dev_brnz_transactions_db_plcy` | `dev_brnz_transactions_uri_plcy` | `dev_data_brnz_key_plcy` | `ofs://ozone1782570080/dev/data/brnz/transactions` |
+| `slvr_transactions` | `dev_slvr_transactions_db_plcy` | `dev_slvr_transactions_uri_plcy` | `dev_data_slvr_key_plcy` | `ofs://ozone1782570080/dev/data/slvr/transactions` |
+| `gld_daily_report` | `dev_gld_daily_report_db_plcy` | `dev_gld_daily_report_uri_plcy` | `dev_data_gld_key_plcy` | `ofs://ozone1782570080/dev/data/gld/daily_transaction_report` |
 
 아래는 **`brnz_transactions`** 예시입니다. 나머지 2개 테이블도 동일 패턴으로 반복하세요.
 
-**5-a. cm_hive SQL table 정책**
+**5-a. cm_hive SQL table 정책 (`_db_plcy`)**
 
 Ranger → **`cm_hive`** → **Add New Policy**
 
 | 필드 | 값 |
 |------|-----|
-| Policy Name | `brnz_transactions` |
+| Policy Name | `dev_brnz_transactions_db_plcy` |
 | database | `sbi_financial` |
 | table | `brnz_transactions` |
 | column | `*` |
 | Permissions | Select, Update, Create, Drop, Alter, Index, Lock, All |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role` |
 
-**5-b. cm_hive URL 정책**
+**5-b. cm_hive URL 정책 (`_uri_plcy`)**
 
 Ranger → **`cm_hive`** → **Add New Policy** → 리소스 타입 **URL** 선택
 
 | 필드 | 값 |
 |------|-----|
-| Policy Name | `brnz_transactions-url` |
+| Policy Name | `dev_brnz_transactions_uri_plcy` |
 | URL | `ofs://ozone1782570080/dev/data/brnz/transactions` |
 | Permissions | Read, Write |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role` |
 
-**5-c. cm_ozone 테이블 데이터 정책**
+**5-c. cm_ozone key 정책 (`_data_{layer}_key_plcy`)**
 
 Ranger → **`cm_ozone`** → **Add New Policy**
 
 | 필드 | 값 |
 |------|-----|
-| Policy Name | `brnz_transactions` |
+| Policy Name | `dev_data_brnz_key_plcy` |
 | volume | `dev` |
 | bucket | `data` |
 | key | `brnz/transactions` |
 | Permissions | Read, Write, Create, Delete |
-| Allow Users | `systest` |
+| Allow Users / Roles | `systest` 또는 `SBI_ETLUsers_RW_Role`, `SBI_ETLAdmin_Role` |
 
 Gateway에서 전체 목록 확인:
 
@@ -1025,8 +1044,8 @@ SBI 클러스터는 **Kerberos + Auto-TLS**로 **인증**하고, **HDFS / HMS / 
 
 - [ ] `bash scripts/security/kinit_manager.sh` 실행 (Kerberos 인증)
 - [ ] `bash scripts/security/security_check.sh` 통과 (Kerberos + Ranger 경로 probe)
-- [ ] **Iceberg-on-Ozone Ranger (Cloudera)** — Storage Handler + per-table cm_hive SQL `{table}` + URL `{table}-url` + cm_ozone `{table}`
-- [ ] Ranger 정책에 `systest` principal — HDFS raw / `sbi_financial` DB / per-table pairs
+- [ ] **Iceberg-on-Ozone Ranger (Cloudera + SBI)** — Storage Handler + `{env}_{table}_db_plcy` + `_uri_plcy` + `{env}_data_{layer}_key_plcy`
+- [ ] cm_ozone 인프라 — `{env}_volume_plcy` + `{env}_data_bucket_plcy`
 - [ ] HDFS Encryption Zone on `/{env}/raw/financial/transactions` (key **`hdfs_encryption_key`**)
 - [ ] Ozone bucket `/{env}/data` created with **`--bucketkey ozone_encryption_key`**
 - [ ] Ranger KMS ACL — **`hdfs_encryption_key`** (hdfs + systest) · **`ozone_encryption_key`** (OM + systest)
@@ -1043,13 +1062,13 @@ SBI 클러스터는 **Kerberos + Auto-TLS**로 **인증**하고, **HDFS / HMS / 
 | **cm_hdfs** | `hdfs://ns1/dev/raw/financial/transactions` | Raw JSON 업로드 |
 | **cm_hdfs** | `hdfs:///user/spark/applicationHistory` | Spark event log |
 | **cm_hive** | Storage Handler — `iceberg`, RW Storage | CREATE/ALTER table location (cluster) |
-| **cm_hive** | SQL `{table}` + URL `{table}-url` | Iceberg SQL + ofs:// table path |
-| **cm_ozone** | **`dev-volume`**, **`dev-data-bucket`** | volume/bucket **생성** (3단계) |
-| **cm_ozone** | `{table}` — volume/bucket/key | OFS data files (SBI pair with cm_hive SQL) |
+| **cm_hive** | `{env}_{table}_db_plcy` + `{env}_{table}_uri_plcy` | Iceberg SQL + ofs:// table path |
+| **cm_ozone** | **`dev_volume_plcy`**, **`dev_data_bucket_plcy`** | volume/bucket **생성** |
+| **cm_ozone** | `{env}_data_{layer}_key_plcy` | OFS data files (brnz/slvr/gld layer) |
 | **Ranger KMS** | **`hdfs_encryption_key`** · **`ozone_encryption_key`** | HDFS EZ · Ozone TDE |
 
-> **Cloudera CDP 7.3.1:** 테이블당 cm_hive **Storage Handler + SQL + URL** + cm_ozone 정책 필요. SBI pair: cm_hive SQL **`aaa`** + cm_ozone **`aaa`**.  
-> 출력: `bash scripts/security/print_ranger_iceberg_pairs.sh` · [Cloudera-aligned guide](docs/operations/ranger-iceberg-ozone-pairs.md)
+> **Cloudera CDP 7.3.1 + SBI naming:** 테이블당 cm_hive **Storage Handler + _db_plcy + _uri_plcy** + cm_ozone **_data_{layer}_key_plcy**.  
+> 출력: `bash scripts/security/print_ranger_iceberg_pairs.sh` · [SBI naming guide](docs/operations/ranger-iceberg-ozone-pairs.md)
 
 UAT/PROD는 `environments/{uat,prod}.yaml`의 `medallion`·`hdfs_encryption`·`ozone_encryption` 경로에 맞춰 동일 패턴으로 정책을 추가합니다.
 
@@ -1142,13 +1161,13 @@ kinit -kt /opt/cloudera/systest.keytab systest@QE-INFRA-AD.CLOUDERA.COM
 
 **Ranger Ozone 인프라 정책**이 없습니다. Kerberos는 성공했지만 `cm_ozone`에 volume CREATE 권한이 없습니다.
 
-Ranger Admin → **`cm_ozone`** → 정책 **`dev-volume`** 등록:
+Ranger Admin → **`cm_ozone`** → 정책 **`dev_volume_plcy`** 등록:
 
 | volume | bucket | key | Permissions | User |
 |--------|--------|-----|-------------|------|
 | `dev` | `*` | `*` | Read, Write, **Create** | `systest` |
 
-bucket 생성 전 **`dev-data-bucket`** 정책도 필요합니다 → [7절 Ranger Web UI — 3단계 cm_ozone](#파이프라인-실행-전-ranger-web-ui-정책-등록-순서대로)
+bucket 생성 전 **`dev_data_bucket_plcy`** 정책도 필요합니다 → [7절 Ranger Web UI — cm_ozone 인프라](#3-cm_ozone--volume--bucket-인프라-생성-권한)
 
 ### Q. `hdfs dfs -ls ofs://ozone1782570080/` 결과가 비어 있음
 

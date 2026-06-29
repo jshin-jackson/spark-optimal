@@ -148,10 +148,13 @@ def verify_pairs_match_medallion(env: str | None = None) -> list[str]:
             errors.append(
                 f"{table_name}: ozone path mismatch — config={actual!r} medallion={expected!r}"
             )
-        if pair["hive_policy"]["policy_name"] != table_name:
-            errors.append(f"{table_name}: SQL table policy_name must equal table name")
-        if pair["ozone_policy"]["policy_name"] != table_name:
-            errors.append(f"{table_name}: cm_ozone policy_name must equal table name")
-        if pair["url_policy"]["policy_name"] != f"{table_name}-url":
-            errors.append(f"{table_name}: URL policy_name must be {table_name}-url")
+        expected_db = f"{env_name}_{table_name}_db_plcy"
+        expected_uri = f"{env_name}_{table_name}_uri_plcy"
+        expected_ozone = f"{env_name}_data_{layer}_key_plcy"
+        if pair["hive_policy"]["policy_name"] != expected_db:
+            errors.append(f"{table_name}: SQL policy_name must be {expected_db}")
+        if pair["url_policy"]["policy_name"] != expected_uri:
+            errors.append(f"{table_name}: URL policy_name must be {expected_uri}")
+        if pair["ozone_policy"]["policy_name"] != expected_ozone:
+            errors.append(f"{table_name}: cm_ozone policy_name must be {expected_ozone}")
     return errors

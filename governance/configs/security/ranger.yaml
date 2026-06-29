@@ -56,8 +56,8 @@ iceberg_ozone_pairs:
     - https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/spark-iceberg/topics/iceberg-ranger-introduction.html
     - https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/iceberg-how-to/topics/iceberg-ozone-policy.html
     - https://docs.cloudera.com/cdp-private-cloud-base/7.3.1/spark-iceberg/topics/iceberg-setup-ranger.html
-  rule: "Per table: cm_hive Storage Handler + SQL {table} + URL {table}-url + cm_ozone {table}"
-  sbi_pair: "cm_hive SQL policy name = cm_ozone policy name = table name"
+  rule: "Per table: cm_hive Storage Handler + {env}_{table}_db_plcy + {env}_{table}_uri_plcy + cm_ozone {env}_data_{layer}_key_plcy"
+  sbi_naming: "cm_hive _db_plcy + _uri_plcy + cm_ozone _data_{layer}_key_plcy (see naming_convention in ranger_iceberg_ozone_pairs.yaml)"
   engines: [Spark, Hive, Impala]
 
 # HDFS TDE — raw ingest paths use Ranger KMS Encryption Zones (see hdfs_encryption.yaml)
@@ -97,18 +97,18 @@ environments:
     ozone_infrastructure:
       - path: ofs://ozone1782570080/dev
         resource_type: volume
-        policy_name: dev-volume
+        policy_name: dev_volume_plcy
         actions: [read, write, create]
       - path: ofs://ozone1782570080/dev/data
         resource_type: bucket
-        policy_name: dev-data-bucket
+        policy_name: dev_data_bucket_plcy
         actions: [read, write, create, delete]
     hive_database:
       ranger_service: cm_hive
-      policy_name: sbi_financial
+      policy_name: dev_sbi_financial_db_plcy
       database: sbi_financial
       actions: [create, select, update, alter, drop, index, lock, all]
-    # Paired cm_hive + cm_ozone — see ranger_iceberg_ozone_pairs.yaml (policy_name = table_name)
+    # Per-table cm_hive + cm_ozone — see ranger_iceberg_ozone_pairs.yaml (_db_plcy / _uri_plcy / _key_plcy)
     iceberg_table_pairs:
       - table: brnz_transactions
         ozone_path: ofs://ozone1782570080/dev/data/brnz/transactions
@@ -131,12 +131,17 @@ environments:
       - path: hdfs://ns1/uat/raw/financial/transactions
         actions: [read, write, execute]
     ozone_infrastructure:
+      - path: ofs://ozone1782570080/uat
+        resource_type: volume
+        policy_name: uat_volume_plcy
+        actions: [read, write, create]
       - path: ofs://ozone1782570080/uat/data
         resource_type: bucket
-        policy_name: uat-data-bucket
+        policy_name: uat_data_bucket_plcy
         actions: [read, write, create, delete]
     hive_database:
-      policy_name: sbi_financial
+      ranger_service: cm_hive
+      policy_name: uat_sbi_financial_db_plcy
       database: sbi_financial
       actions: [create, select, update, alter, drop, index, lock, all]
     iceberg_table_pairs:
@@ -152,12 +157,17 @@ environments:
       - path: hdfs://ns1/prod/raw/financial/transactions
         actions: [read, write, execute]
     ozone_infrastructure:
+      - path: ofs://ozone1782570080/prod
+        resource_type: volume
+        policy_name: prod_volume_plcy
+        actions: [read, write, create]
       - path: ofs://ozone1782570080/prod/data
         resource_type: bucket
-        policy_name: prod-data-bucket
+        policy_name: prod_data_bucket_plcy
         actions: [read, write, create, delete]
     hive_database:
-      policy_name: sbi_financial
+      ranger_service: cm_hive
+      policy_name: prod_sbi_financial_db_plcy
       database: sbi_financial
       actions: [create, select, update, alter, drop, index, lock, all]
     iceberg_table_pairs:
@@ -173,9 +183,9 @@ policy_request_template:
   checklist:
     - "Ranger HDFS (cm_hdfs) policy for raw path and Spark history dir"
     - "HDFS Encryption Zone on /{env}/raw/financial/transactions (hdfs_encryption_key)"
-    - "Ranger Ozone (cm_ozone) volume/bucket infrastructure policies for {env}"
-    - "Cloudera Iceberg-on-Ozone: cm_hive Storage Handler (iceberg RW Storage) + per-table SQL + URL + cm_ozone"
-    - "SBI pair per table: cm_hive SQL '{table}' + cm_ozone '{table}' — see ranger_iceberg_ozone_pairs.yaml"
+    - "Ranger Ozone (cm_ozone) {env}_volume_plcy + {env}_data_bucket_plcy infrastructure"
+    - "Cloudera Iceberg-on-Ozone: cm_hive Storage Handler + {env}_{table}_db_plcy + _uri_plcy + {env}_data_{layer}_key_plcy"
+    - "SBI triple per table — see ranger_iceberg_ozone_pairs.yaml naming_convention"
     - "Ranger KMS hdfs_encryption_key (hdfs + systest) — HDFS TDE"
     - "Ranger KMS ozone_encryption_key (OM + systest) — Ozone TDE"
     - "Ozone bucket created with --bucketkey ozone_encryption_key"

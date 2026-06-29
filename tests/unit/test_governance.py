@@ -80,9 +80,9 @@ def test_ranger_paired_policies_dev():
     pairs = resolve_paired_policies("dev")
     assert len(pairs) == 3
     brnz = next(p for p in pairs if p["table_name"] == "brnz_transactions")
-    assert brnz["hive_policy"]["policy_name"] == "brnz_transactions"
-    assert brnz["ozone_policy"]["policy_name"] == "brnz_transactions"
-    assert brnz["url_policy"]["policy_name"] == "brnz_transactions-url"
+    assert brnz["hive_policy"]["policy_name"] == "dev_brnz_transactions_db_plcy"
+    assert brnz["ozone_policy"]["policy_name"] == "dev_data_brnz_key_plcy"
+    assert brnz["url_policy"]["policy_name"] == "dev_brnz_transactions_uri_plcy"
     assert brnz["ozone_policy"]["path"] == "ofs://ozone1782570080/dev/data/brnz/transactions"
     assert brnz["hive_policy"]["ranger_service"] == "cm_hive"
     assert brnz["ozone_policy"]["ranger_service"] == "cm_ozone"

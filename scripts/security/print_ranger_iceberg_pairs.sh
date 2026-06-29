@@ -5,7 +5,7 @@
 #   cm_hive (Hadoop SQL): Storage Handler + SQL table + URL policies
 #   cm_ozone: volume/bucket/key policy per table
 #
-# SBI pair: cm_hive SQL policy {table} + cm_ozone policy {table} (same name)
+# SBI triple: cm_hive {env}_{table}_db_plcy + {env}_{table}_uri_plcy + cm_ozone {env}_data_{layer}_key_plcy
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -94,7 +94,8 @@ for entry in resolve_table_policies(env):
     )
     print()
 
-print("SBI pair (same name): cm_hive SQL '{table}' + cm_ozone '{table}'")
-print("Also required: cm_hive '{table}-url' + cluster Storage Handler (iceberg, RW Storage)")
+print("SBI triple per table: cm_hive {env}_{table}_db_plcy + {env}_{table}_uri_plcy + cm_ozone {env}_data_{layer}_key_plcy")
+print("Infrastructure: cm_ozone {env}_volume_plcy + {env}_data_bucket_plcy")
+print("Also required: cluster Storage Handler (iceberg, RW Storage)")
 print("Principal:", cfg["principal"])
 PY
