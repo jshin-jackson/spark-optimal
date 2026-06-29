@@ -22,7 +22,7 @@ SBI 정책: **chmod/chown/setfacl 금지**. 접근 거부 시 Ranger UI에서 `s
 
 | Service | Ranger plugin | spark-optimal resources |
 |---------|---------------|-------------------------|
-| HDFS | hdfs | `{env}/data/brnz/transactions`, Spark history |
+| HDFS | hdfs | `{env}/data/migration/upload`, Spark history |
 | Ozone | ozone | `{env}/data/brnz`, `slvr`, `gld` |
 | Hive | hive | DB `sbi_financial`, Iceberg tables |
 | Spark | spark | Align with Hive/HDFS/Ozone when plugin enabled |

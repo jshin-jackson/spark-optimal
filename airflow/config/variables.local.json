@@ -3,7 +3,7 @@
   "sbi_env": "dev",
   "financial_target_gb": "1",
   "hdfs_uri": "hdfs://ns1",
-  "hdfs_financial_raw": "hdfs://ns1/dev/data/brnz/transactions",
+  "hdfs_financial_raw": "hdfs://ns1/dev/data/migration/upload",
   "financial_local_output": "/Users/jackson/Cloudera/Customer/SBI/spark-optimal/data/output/financial",
   "schedule_financial_medallion": "@once",
   "schedule_iceberg_maintenance": "@weekly",

@@ -52,7 +52,7 @@ resource_limits:
   shuffle_partitions: 200
 
 medallion:
-  hdfs_raw_path: hdfs://ns1/prod/data/brnz/transactions
+  hdfs_raw_path: hdfs://ns1/prod/data/migration/upload
   brnz_base: ofs://ozone1782570080/prod/data/brnz
   slvr_base: ofs://ozone1782570080/prod/data/slvr
   gld_base: ofs://ozone1782570080/prod/data/gld

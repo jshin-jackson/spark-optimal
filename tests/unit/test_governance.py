@@ -55,7 +55,7 @@ def test_hdfs_encryption_config():
     assert cfg["kms_service"] == "cm_kms"
     assert cfg["enabled"] is True
     assert cfg["encryption_zones"]["financial_raw"]["path_by_environment"]["dev"] == (
-        "/dev/data/brnz/transactions"
+        "/dev/data/migration/upload"
     )
     assert any("hdfs_encryption_key" in item for item in HDFS_ENCRYPTION_CHECKLIST)
 

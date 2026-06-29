@@ -86,9 +86,9 @@ forbidden:
 environments:
   dev:
     hdfs:
-      - path: hdfs://ns1/dev/data/brnz/transactions
+      - path: hdfs://ns1/dev/data/migration/upload
         actions: [read, write, execute]
-      - path: hdfs://ns1/dev/data/brnz
+      - path: hdfs://ns1/dev/data/migration
         actions: [read, write, execute]
       - path: hdfs:///user/spark/applicationHistory
         actions: [read, write, execute]
@@ -128,7 +128,7 @@ environments:
 
   uat:
     hdfs:
-      - path: hdfs://ns1/uat/data/brnz/transactions
+      - path: hdfs://ns1/uat/data/migration/upload
         actions: [read, write, execute]
     ozone_infrastructure:
       - path: ofs://ozone1782570080/uat
@@ -154,7 +154,7 @@ environments:
 
   prod:
     hdfs:
-      - path: hdfs://ns1/prod/data/brnz/transactions
+      - path: hdfs://ns1/prod/data/migration/upload
         actions: [read, write, execute]
     ozone_infrastructure:
       - path: ofs://ozone1782570080/prod
@@ -182,7 +182,7 @@ policy_request_template:
   summary: "Grant spark-optimal {env} access for {principal}"
   checklist:
     - "Ranger HDFS (cm_hdfs) policy for raw path and Spark history dir"
-    - "HDFS Encryption Zone on /{env}/data/brnz/transactions (hdfs_encryption_key)"
+    - "HDFS Encryption Zone on /{env}/data/migration/upload (hdfs_encryption_key)"
     - "Ranger Ozone (cm_ozone) {env}_volume_plcy + {env}_data_bucket_plcy infrastructure"
     - "Cloudera Iceberg-on-Ozone: cm_hive Storage Handler + {env}_{table}_db_plcy + _uri_plcy + {env}_data_{layer}_key_plcy"
     - "SBI triple per table — see ranger_iceberg_ozone_pairs.yaml naming_convention"

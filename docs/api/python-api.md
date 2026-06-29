@@ -18,7 +18,7 @@ spark = SparkSessionBuilder("sbi_financial", "my_job").create_session(
 from spark_optimal.platform.migration.hdfs_to_ozone import HDFSToOzoneMigrator, MigrationConfig
 
 HDFSToOzoneMigrator(spark, MigrationConfig(
-    source_path="hdfs://ns1/prod/data/brnz/transactions",
+    source_path="hdfs://ns1/prod/data/migration/upload",
     target_table="spark_catalog.sbi_financial.brnz_transactions",
     format="json",
     table_location="ofs://ozone1782570080/prod/data/brnz/transactions",

@@ -48,7 +48,7 @@ governance/configs/environments/{dev,uat,prod}.yaml  → medallion section
 
 | Purpose | Example (DEV) | Actions |
 |---------|---------------|---------|
-| Financial raw ingest | `hdfs://ns1/dev/data/brnz/transactions` | read, write, execute |
+| Financial raw ingest | `hdfs://ns1/dev/data/migration/upload` | read, write, execute |
 | Spark event log | `hdfs:///user/spark/applicationHistory` | read, write, execute |
 
 ### Ozone + Iceberg (Cloudera CDP 7.3.1)
@@ -92,7 +92,7 @@ HDFS and Ozone use **separate** Ranger KMS keys on service **`cm_kms`**:
 HDFS Encryption Zone (empty directory required):
 
 ```bash
-hdfs crypto -createZone -keyName hdfs_encryption_key -path /dev/data/brnz/transactions
+hdfs crypto -createZone -keyName hdfs_encryption_key -path /dev/data/migration/upload
 ```
 
 Ozone bucket must be created with encryption at creation time:

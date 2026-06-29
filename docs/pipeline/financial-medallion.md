@@ -16,7 +16,7 @@ graph LR
 | Step | Action | Location |
 |------|--------|----------|
 | 1 | SDV generate ~10GB JSON | `data/output/financial/*.jsonl` |
-| 2 | Upload to HDFS | `hdfs://ns1/prod/data/brnz/transactions` |
+| 2 | Upload to HDFS | `hdfs://ns1/prod/data/migration/upload` |
 | 3 | Spark ingest JSON | `ofs://ozone1782570080/prod/data/brnz/transactions` |
 | 4 | ETL to report tables | `slvr/` + `gld/` |
 
@@ -52,7 +52,7 @@ Do not use filesystem ACLs. See [Ranger Authorization](../operations/ranger-auth
 ## HDFS encryption (required)
 
 HDFS raw ingest path uses **TDE** via **Encryption Zone** with Ranger KMS key **`hdfs_encryption_key`**.  
-Create zone: `hdfs crypto -createZone -keyName hdfs_encryption_key -path /{env}/data/brnz/transactions`  
+Create zone: `hdfs crypto -createZone -keyName hdfs_encryption_key -path /{env}/data/migration/upload`  
 Run first: `bash scripts/infrastructure/setup_hdfs_encryption_zone.sh`  
 See [HDFS Encryption](../operations/hdfs-encryption.md).
 

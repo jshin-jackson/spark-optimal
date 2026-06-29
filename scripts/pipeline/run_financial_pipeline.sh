@@ -44,7 +44,7 @@ export SPARK_CONF_DIR="${PROJECT_ROOT}/conf/${SBI_ENV}"
 # 기본값: 10GB SDV, 로컬 출력 경로, HDFS raw 경로
 TARGET_GB="${TARGET_GB:-10}"
 LOCAL_OUTPUT="${LOCAL_OUTPUT:-${PROJECT_ROOT}/data/output/financial}"
-HDFS_RAW="${HDFS_FINANCIAL_RAW:-${HDFS_URI}/${SBI_ENV}/data/brnz/transactions}"
+HDFS_RAW="${HDFS_FINANCIAL_RAW:-${HDFS_URI}/${SBI_ENV}/data/migration/upload}"
 SKIP_GENERATE="${SKIP_GENERATE:-false}"
 SKIP_UPLOAD="${SKIP_UPLOAD:-false}"
 

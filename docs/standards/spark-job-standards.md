@@ -23,7 +23,7 @@ HDFS, HMS, Spark, and Ozone permissions are enforced **only** by Apache Ranger.
 
 | Resource | Ranger service | Example (prod) |
 |----------|----------------|----------------|
-| Raw JSON | HDFS | `hdfs://ns1/prod/data/brnz/transactions` |
+| Raw JSON | HDFS | `hdfs://ns1/prod/data/migration/upload` |
 | Medallion | Ozone | `ofs://ozone1782570080/prod/data/{brnz,slvr,gld}` |
 | Iceberg | Hive | `sbi_financial.*` |
 
