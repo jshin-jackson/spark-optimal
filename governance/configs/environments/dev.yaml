@@ -44,24 +44,24 @@ infrastructure:
   ranger_hosts: governance/configs/infrastructure/ranger_hosts.yaml
   rebuild_doc: docs/infrastructure/dev-jenkins-rebuild.md
 
-# DEV YARN cluster capacity (Gateway DEV environment)
+# DEV YARN cluster capacity (Gateway DEV environment — jshin-sbi)
 cluster:
-  total_vcores: 32
-  total_memory_gb: 256
+  total_vcores: 72
+  total_memory_gb: 288
   node_managers: 9
-  cores_per_node: 4          # 32 / 9 (rounded)
-  memory_per_node_gb: 28       # 256 / 9 (rounded)
-  yarn_reserved_ratio: 0.15    # 15% headroom for AM / system / other apps
+  cores_per_node: 16             # each NM: 16 vCore (SBI DEV spec)
+  memory_per_node_gb: 32         # each NM: 32.0 GiB
+  yarn_reserved_ratio: 0.15      # 15% headroom for AM / system / other apps
 
 # Spark resource caps derived from cluster size above
 resource_limits:
-  max_executors_absolute: 16
+  max_executors_absolute: 24
   max_executor_cores: 2
   executor_memory: "4g"
   executor_memory_overhead: "1g"
   driver_memory: "2g"
   driver_cores: 1
-  shuffle_partitions: 32
+  shuffle_partitions: 48
 
 medallion:
   hdfs_raw_path: hdfs://ns1/dev/data/migration/upload

@@ -7,9 +7,11 @@ from spark_optimal.config import load_cluster_config, load_environment_config, l
 
 def test_dev_cluster_from_yaml():
     cfg = load_cluster_config("dev")
-    assert cfg["total_vcores"] == 32
-    assert cfg["total_memory_gb"] == 256
+    assert cfg["total_vcores"] == 72
+    assert cfg["total_memory_gb"] == 288
     assert cfg["node_managers"] == 9
+    assert cfg["cores_per_node"] == 16
+    assert cfg["memory_per_node_gb"] == 32
 
 
 def test_uat_cluster_from_yaml():
@@ -43,5 +45,5 @@ def test_missing_cluster_raises(monkeypatch):
 
 def test_dev_resource_limits_from_yaml():
     limits = load_resource_limits("dev")
-    assert limits["max_executors_absolute"] == 16
-    assert limits["shuffle_partitions"] == 32
+    assert limits["max_executors_absolute"] == 24
+    assert limits["shuffle_partitions"] == 48

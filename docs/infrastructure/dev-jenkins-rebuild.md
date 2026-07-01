@@ -82,9 +82,11 @@ yarn node -list -all
 
 ```yaml
 cluster:
-  total_vcores: 32      # yarn node -list 기준 합산
-  total_memory_gb: 256
+  total_vcores: 72      # yarn node -list 기준 합산
+  total_memory_gb: 288
   node_managers: 9
+  cores_per_node: 16
+  memory_per_node_gb: 32
 ```
 
 Spark executor 상한은 `resource_limits` 및 `conf/dev/spark-defaults.conf` 에서 조정.
