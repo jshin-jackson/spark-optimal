@@ -34,22 +34,24 @@ hdfs_encryption:
   config: governance/configs/security/hdfs_encryption.yaml
   setup_script: scripts/infrastructure/setup_hdfs_encryption_zone.sh
 
+# UAT YARN cluster capacity (SBI 검증 환경)
 cluster:
-  total_vcores: 26496
-  total_memory_gb: 123566
-  node_managers: 214
-  cores_per_node: 124
-  memory_per_node_gb: 577
-  yarn_reserved_ratio: 0.10
+  total_vcores: 1085
+  total_memory_gb: 20163          # 19.69 TB (19.69 × 1024 GB)
+  node_managers: 40
+  cores_per_node: 64              # each NM: 64 vCore (SBI UAT spec)
+  memory_per_node_gb: 1229        # 1.2 TiB per NM (1.2 × 1024 GB)
+  yarn_reserved_ratio: 0.10       # 10% headroom for AM / system / other apps
 
+# Spark resource caps derived from cluster size above
 resource_limits:
-  max_executors_absolute: 100
-  max_executor_cores: 6
+  max_executors_absolute: 80
+  max_executor_cores: 4
   executor_memory: "8g"
   executor_memory_overhead: "2g"
   driver_memory: "4g"
   driver_cores: 2
-  shuffle_partitions: 200
+  shuffle_partitions: 100
 
 medallion:
   hdfs_raw_path: hdfs://ns1/uat/data/migration/upload

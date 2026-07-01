@@ -940,6 +940,24 @@ DEV 설정 변경 시 수정할 파일:
 
 DEV 클러스터 **신규 프로비저닝·재빌드**는 Jenkins 파라미터를 사용합니다 → [16절](#16-dev-jenkins--cloudcat-클러스터-재빌드)
 
+### UAT 클러스터 Spark 설정 (현재 기준)
+
+| 항목 | 값 |
+|------|-----|
+| 총 vCore | 1,085 |
+| 총 Memory | 19.69 TB |
+| NodeManager | 40대 (각 64 vCore, 1.2 TiB) |
+| executor cores | 4 |
+| executor memory | 8g (+ 2g overhead) |
+| maxExecutors | 80 |
+| shuffle partitions | 100 |
+| YARN queue | `etl` |
+
+UAT 설정 변경 시 수정할 파일:
+
+1. `governance/configs/environments/uat.yaml` → `cluster`, `resource_limits`, `medallion`
+2. `conf/uat/spark-defaults.conf` → Spark executor/driver 기본값
+
 ---
 
 ## 11. 설정 파일 가이드 (환경 값은 코드가 아닌 YAML)
@@ -1135,6 +1153,15 @@ spark.security.credentials.hive.enabled=true
 
 Jenkins/CloudCat 재빌드 파라미터·절차 → **[16절 DEV Jenkins / CloudCat 클러스터 재빌드](#16-dev-jenkins--cloudcat-클러스터-재빌드)**
 
+**UAT** (검증 클러스터)
+
+| 항목 | 값 |
+|------|-----|
+| 총 Memory | 19.69 TB |
+| 총 vCore | 1,085 |
+| NodeManager | 40대 (각 64 vCore, 1.2 TiB) |
+| YARN queue | `etl` |
+
 **PROD** (운영 클러스터)
 
 | 항목 | 값 |
@@ -1143,7 +1170,15 @@ Jenkins/CloudCat 재빌드 파라미터·절차 → **[16절 DEV Jenkins / Cloud
 | 총 vCore | 26,496 |
 | NodeManager | 214대 (각 128 vCore, 1.5 TiB) |
 
-PROD/UAT 클러스터 용량은 `governance/configs/environments/prod.yaml`의 `cluster` 섹션에서 관리합니다.
+### 환경별 YARN 규모 비교
+
+| 환경 | vCore | Memory | NodeManager | 설정 파일 |
+|------|-------|--------|-------------|-----------|
+| DEV | 32 | 256 GB | 9대 | `governance/configs/environments/dev.yaml` |
+| UAT | 1,085 | 19.69 TB | 40대 (64 vCore, 1.2 TiB) | `governance/configs/environments/uat.yaml` |
+| PROD | 26,496 | 120.67 TB | 214대 (128 vCore, 1.5 TiB) | `governance/configs/environments/prod.yaml` |
+
+클러스터 용량·Spark 상한은 각 환경 YAML의 `cluster`·`resource_limits` 섹션에서 관리합니다.
 
 ---
 

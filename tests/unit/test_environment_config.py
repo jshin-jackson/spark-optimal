@@ -12,6 +12,15 @@ def test_dev_cluster_from_yaml():
     assert cfg["node_managers"] == 9
 
 
+def test_uat_cluster_from_yaml():
+    cfg = load_cluster_config("uat")
+    assert cfg["total_vcores"] == 1085
+    assert cfg["total_memory_gb"] == 20163
+    assert cfg["node_managers"] == 40
+    assert cfg["cores_per_node"] == 64
+    assert cfg["memory_per_node_gb"] == 1229
+
+
 def test_prod_cluster_from_yaml():
     cfg = load_cluster_config("prod")
     assert cfg["total_vcores"] == 26496
